@@ -13,7 +13,14 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-CARPETA = Path(__file__).parent / "datos"
+RAIZ = Path(__file__).parent
+# Los resultados pueden estar en la carpeta "datos" o sueltos al lado de app.py: se usa la que los tenga
+# (los busca en todo el repositorio, por si quedaron dentro de otra carpeta)
+_encontrados = sorted(RAIZ.rglob("serie_armonizada.csv"), key=lambda p: len(p.parts))
+CARPETA = _encontrados[0].parent if _encontrados else RAIZ / "datos"
+# Contornos de países para el mapa: desde la propia app si están; si no, desde el sitio de Plotly
+TOPOJSON_LOCAL = (RAIZ / "static" / "topojson" / "world_50m.json").exists()
+CONFIG_MAPA = {"topojsonURL": "app/static/topojson/"} if TOPOJSON_LOCAL else {}
 PAIS = "Argentina (todo el país)"
 MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 COLOR_MODIS, COLOR_VIIRS, COLOR_ARM, COLOR_ALERTA = "#2E6DB4", "#E8833A", "#1F2933", "#C0392B"
@@ -26,6 +33,7 @@ EXPLICA_MEDIDA = {
 }
 
 st.set_page_config(page_title="Focos de calor en Argentina", page_icon="🔥", layout="wide")
+VERSION_APP = "v3"
 
 
 def miles(x, dec=0):
@@ -41,8 +49,15 @@ def cargar():
     return serie, grilla, regiones, metricas
 
 
-if not (CARPETA / "serie_armonizada.csv").exists():
-    st.error("No encuentro los datos. Ejecuten el notebook y copien los archivos de `salida/` a la carpeta `datos/`.")
+NECESARIOS = ["serie_armonizada.csv", "grilla_mensual.csv", "regiones.json", "metricas.json"]
+faltan = [f for f in NECESARIOS if not (CARPETA / f).exists()]
+if faltan:
+    st.caption(f"Versión de la página: {VERSION_APP}")
+    hay = sorted(p.relative_to(RAIZ).as_posix() for p in RAIZ.rglob("*") if p.is_file() and ".git" not in p.parts)
+    st.error("No encuentro estos archivos de resultados: " + ", ".join(faltan) + ". "
+             "Súbanlos al repositorio de GitHub (los 4 archivos de la carpeta `salida` de Drive), "
+             "todos juntos en la misma carpeta.")
+    st.write("Archivos que sí encuentro en el repositorio:", hay[:50])
     st.stop()
 
 serie, grilla, REGIONES, MET = cargar()
@@ -51,7 +66,7 @@ anios = sorted(serie.anio.unique())
 
 # ---------------------------------------------------------------- barra lateral
 st.sidebar.title("🔥 Focos de calor")
-st.sidebar.caption("Serie armonizada MODIS + VIIRS · NASA FIRMS · Argentina")
+st.sidebar.caption(f"Serie armonizada MODIS + VIIRS · NASA FIRMS · Argentina · {VERSION_APP}")
 region = st.sidebar.selectbox("Región", [PAIS] + list(REGIONES) + ["Resto del país"])
 nombre_medida = st.sidebar.radio("Medir la actividad de fuego por", list(NOMBRES.values()))
 medida = {v: k for k, v in NOMBRES.items()}[nombre_medida]
@@ -198,7 +213,7 @@ with tabs[2]:
     fig.update_layout(height=680, margin=dict(t=0, b=0, l=0, r=0))
     with cb:
         # El contorno de los países se sirve desde la propia app (carpeta static/), así el mapa funciona sin depender de otro sitio
-        st.plotly_chart(fig, width="stretch", config={"topojsonURL": "app/static/topojson/"})
+        st.plotly_chart(fig, width="stretch", config=CONFIG_MAPA)
     with ca:
         st.caption(nota)
         st.caption("Los rectángulos son las regiones analizadas. El mapa siempre muestra focos.")

@@ -20,7 +20,7 @@ from folium.plugins import Draw
 from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 
-VERSION_APP = "v8"
+VERSION_APP = "v8.1"
 
 # ---- Video de YouTube: peguen acá el link cuando lo suban (por ejemplo "https://youtu.be/XXXXXXXX"). Vacío = no se muestra.
 VIDEO_URL = ""
@@ -340,12 +340,17 @@ def cargar():
     return serie, grilla, regiones, metricas, huecos
 
 
-@st.cache_data
+@st.cache_resource(show_spinner=False)
 def cargar_focos():
+    """Focos individuales. Se guardan una sola vez en memoria y se comparten (cache_resource no hace copias):
+    con 4 millones de filas, copiarlos en cada interacción superaba la memoria de Streamlit Cloud. No modificar in situ."""
     if not ARCHIVOS_FOCOS:
         return None
     f = pd.concat([pd.read_parquet(a) for a in ARCHIVOS_FOCOS], ignore_index=True)
     f["fecha"] = pd.to_datetime(f["fecha"])
+    for c in ["sensor", "satelite", "confianza", "region"]:
+        if c in f and f[c].dtype != "category":
+            f[c] = f[c].astype("category")
     return f
 
 
@@ -794,9 +799,14 @@ def mostrar_mapa(m, clave, alto=600):
                  round(float(coords[:, 0].min()), 2), round(float(coords[:, 0].max()), 2))
         if nuevo != st.session_state.get("ultimo_dibujo") and nuevo[0] < nuevo[1] and nuevo[2] < nuevo[3]:
             st.session_state.ultimo_dibujo = nuevo
-            st.session_state.bbox_pendiente = (max(nuevo[0], -56.0), min(nuevo[1], -21.0),
-                                               max(nuevo[2], -74.0), min(nuevo[3], -53.0))
-            st.rerun()
+            recorte = (max(nuevo[0], -56.0), min(nuevo[1], -21.0), max(nuevo[2], -74.0), min(nuevo[3], -53.0))
+            if recorte[0] < recorte[1] and recorte[2] < recorte[3]:
+                st.session_state.bbox_pendiente = recorte
+                st.rerun()
+            else:
+                st.warning(tr("El rectángulo quedó fuera de Argentina. Dibujalo sobre el país.",
+                              "The rectangle is outside Argentina. Draw it over the country.",
+                              pt="O retângulo ficou fora da Argentina. Desenhe-o sobre o país."))
 
 
 def capa_puntos(m, df):

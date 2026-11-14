@@ -14,9 +14,9 @@
     "frp": "Factor fijo por región"
   },
   "justificacion": {
-    "focos": "Se eligió «Factor fijo por región»: MAE 425.9 por región y mes, sesgo total -3.2 % y peor año 12.4 % en 2022–2025. Es el de menor error. El Random Forest tuvo MAE 448.7 (+5.4 % respecto del mejor).",
-    "dias": "Se eligió «Mapeo de cuantiles»: MAE 66.1 por región y mes, sesgo total +4.1 % y peor año 11.8 % en 2022–2025. Es el de menor error. El Random Forest tuvo MAE 74.1 (+12.1 % respecto del mejor).",
-    "frp": "Se eligió «Factor fijo por región»: MAE 4,576.5 por región y mes, sesgo total -1.1 % y peor año 5.7 % en 2022–2025. Es el de menor error. El Random Forest tuvo MAE 5,271.4 (+15.2 % respecto del mejor)."
+    "focos": "Se eligió «Factor fijo por región»: MAE 425.9 por región y mes, sesgo total -3.2 % y peor año 12.4 % en 2022–2025. Es el de menor error. El Random Forest tuvo MAE 449.3 (+5.5 % respecto del mejor).",
+    "dias": "Se eligió «Mapeo de cuantiles»: MAE 66.1 por región y mes, sesgo total +4.1 % y peor año 11.8 % en 2022–2025. Es el de menor error. El Random Forest tuvo MAE 74.0 (+12.0 % respecto del mejor).",
+    "frp": "Se eligió «Factor fijo por región»: MAE 4,576.5 por región y mes, sesgo total -1.1 % y peor año 5.7 % en 2022–2025. Es el de menor error. El Random Forest tuvo MAE 5,283.6 (+15.5 % respecto del mejor)."
   },
   "resultados": {
     "focos": [
@@ -29,8 +29,8 @@
       },
       {
         "método": "Regresión log por región y mes",
-        "MAE": 433.98212262880577,
-        "R² (log)": 0.9671675089956282,
+        "MAE": 433.9821226288057,
+        "R² (log)": 0.9671675089956283,
         "Sesgo total %": -2.032562404881677,
         "Peor año (país) %": 12.826792984894187
       },
@@ -43,10 +43,10 @@
       },
       {
         "método": "Random Forest",
-        "MAE": 448.74424843080783,
-        "R² (log)": 0.9743465050329836,
-        "Sesgo total %": -0.7359474638514718,
-        "Peor año (país) %": 14.356913877115819
+        "MAE": 449.2936593753016,
+        "R² (log)": 0.9743667606553716,
+        "Sesgo total %": -0.7597262059382603,
+        "Peor año (país) %": 14.356927169034295
       }
     ],
     "dias": [
@@ -59,10 +59,10 @@
       },
       {
         "método": "Regresión log por región y mes",
-        "MAE": 79.13321198438253,
+        "MAE": 79.13321198438251,
         "R² (log)": 0.974463593794067,
         "Sesgo total %": 4.116757454605091,
-        "Peor año (país) %": 12.672450553739578
+        "Peor año (país) %": 12.672450553739623
       },
       {
         "método": "Mapeo de cuantiles",
@@ -73,10 +73,10 @@
       },
       {
         "método": "Random Forest",
-        "MAE": 74.10081341517937,
-        "R² (log)": 0.9773200123059699,
-        "Sesgo total %": 3.9794296116987704,
-        "Peor año (país) %": 11.434402997297411
+        "MAE": 74.02144978526391,
+        "R² (log)": 0.9773294385058118,
+        "Sesgo total %": 4.007957289302122,
+        "Peor año (país) %": 11.441292632580623
       }
     ],
     "frp": [
@@ -89,7 +89,7 @@
       },
       {
         "método": "Regresión log por región y mes",
-        "MAE": 4724.694535188244,
+        "MAE": 4724.694535188243,
         "R² (log)": 0.9158205695755575,
         "Sesgo total %": -0.05617968950769603,
         "Peor año (país) %": 9.632856360602249
@@ -103,10 +103,10 @@
       },
       {
         "método": "Random Forest",
-        "MAE": 5271.386839491491,
-        "R² (log)": 0.9440627607733718,
-        "Sesgo total %": -2.7291733025318177,
-        "Peor año (país) %": 13.170645474556098
+        "MAE": 5283.572399167631,
+        "R² (log)": 0.9439684808247407,
+        "Sesgo total %": -2.732721982147701,
+        "Peor año (país) %": 13.183519799997223
       }
     ]
   },
@@ -143,10 +143,10 @@
         143439.71376336965
       ],
       "Random Forest": [
-        242948.04132373503,
-        151417.77290723298,
-        153951.8517379284,
-        148782.010495663
+        242871.02229159442,
+        151384.3965847357,
+        153951.86963204073,
+        148725.39745971063
       ]
     },
     "dias": {
@@ -169,9 +169,9 @@
         38676.519170803
       ],
       "Regresión log por región y mes": [
-        48301.934220029354,
+        48301.93422002936,
         38345.68934807984,
-        40514.75977011368,
+        40514.75977011369,
         40502.03702880044
       ],
       "Mapeo de cuantiles": [
@@ -181,10 +181,10 @@
         40368.48499849307
       ],
       "Random Forest": [
-        48915.94378204336,
-        37786.177696428786,
-        40069.5826297682,
-        40671.57036695877
+        48924.4313710337,
+        37800.51226313184,
+        40072.06000482334,
+        40692.21038183879
       ]
     },
     "frp": {
@@ -207,10 +207,10 @@
         1531341.2559292575
       ],
       "Regresión log por región y mes": [
-        3091066.7001381316,
-        1925115.8064913987,
+        3091066.700138132,
+        1925115.806491399,
         1652671.7415389612,
-        1608762.1586208702
+        1608762.15862087
       ],
       "Mapeo de cuantiles": [
         3200460.265877134,
@@ -219,10 +219,10 @@
         1589971.5105296478
       ],
       "Random Forest": [
-        2871239.6661458868,
-        1871491.6443364487,
-        1676522.6279303604,
-        1636977.9373704128
+        2870813.9429088146,
+        1869643.66309794,
+        1678454.5251076904,
+        1637025.8334641522
       ]
     }
   },
@@ -378,5 +378,6 @@
     "2024": 0.451,
     "2025": 0.407,
     "2026": 0.365
-  }
+  },
+  "factor_pais_focos": 3.35
 }

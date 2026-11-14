@@ -393,7 +393,88 @@ def colores(escala, valores):
     from plotly.colors import sample_colorscale
     v = np.clip(np.asarray(valores, dtype=float), 0, 1)
     return sample_colorscale(escala, list(v), colortype="rgb") if len(v) else []
+SEMAFORO = ({"normal": "#009E73", "elevado": "#E69F00", "excepcional": "#D55E00"} if ACC
+            else {"normal": "#4F9D69", "elevado": AMBAR, "excepcional": BRASA})
+NIVEL_TXT = {"normal": tr("Dentro de lo habitual", "Within the usual range"),
+             "elevado": tr("Actividad elevada", "Elevated activity"),
+             "excepcional": tr("Actividad excepcional", "Exceptional activity")}
+ICONO = {"normal": "●", "elevado": "▲", "excepcional": "◆"}
 
+st.markdown(f"""
+<style>
+.semaforo {{ display:flex; gap:1.1rem; align-items:center; background:#FFFFFF; border:1px solid #CBD5DB;
+  border-radius:8px; padding:.9rem 1.1rem; margin:.1rem 0 .6rem 0; max-width:940px; }}
+.semaforo .luces {{ display:flex; flex-direction:column; gap:5px; background:{TINTA}; padding:6px; border-radius:14px; }}
+.semaforo .luz {{ width:16px; height:16px; border-radius:50%; background:#3A4B57; }}
+.semaforo .nivel {{ font-weight:800; font-stretch:118%; font-size:1.2rem; line-height:1.2; }}
+.semaforo p {{ margin:.25rem 0 0 0; max-width:72ch; line-height:1.5; color:{TINTA}; }}
+</style>""", unsafe_allow_html=True)
+
+
+def fecha_txt(t, con_anio=True):
+    if EN:
+        return f"{t:%b %d, %Y}" if con_anio else f"{t:%b %d}"
+    return f"{t:%d/%m/%Y}" if con_anio else f"{t:%d/%m}"
+
+
+def ventana_reciente(diario, dias, refs):
+    """Focos armonizados de los últimos `dias` días hasta FECHA_FIN y de la misma ventana en cada año de referencia."""
+    fin = FECHA_FIN
+    ini = fin - pd.Timedelta(days=dias - 1)
+    actual = float(diario.equiv.loc[ini:fin].sum())
+    filas = []
+    for y in refs:
+        f_y = fin - pd.DateOffset(years=fin.year - y)          # un 29/02 pasa al 28/02
+        i_y = f_y - pd.Timedelta(days=dias - 1)
+        if i_y >= diario.index[0]:
+            filas.append({"anio": y, "valor": float(diario.equiv.loc[i_y:f_y].sum())})
+    return actual, ini, fin, pd.DataFrame(filas, columns=["anio", "valor"])
+
+
+def nivel_alerta(actual, historicos):
+    """Nivel del semáforo: elevado por encima del percentil 75 de los años de referencia, excepcional por encima del 90."""
+    h = np.asarray(historicos, dtype=float)
+    p75, p90 = np.percentile(h, [75, 90])
+    pct = 100 * ((h < actual).sum() + 0.5 * (h == actual).sum()) / len(h)
+    if actual > 0 and actual > p90:
+        nivel = "excepcional"
+    elif actual > 0 and actual > p75:
+        nivel = "elevado"
+    else:
+        nivel = "normal"
+    return nivel, pct, p75, p90
+
+
+def tramo_temporada(y, mes_ini):
+    ini = pd.Timestamp(year=y, month=mes_ini, day=1)
+    return ini, ini + pd.DateOffset(years=1) - pd.Timedelta(days=1)
+
+
+def nombre_temporada(y, mes_ini):
+    return str(y) if mes_ini == 1 else f"{y}/{str(y + 1)[-2:]}"
+
+
+def curvas_temporada(diario, mes_ini, temporada, refs):
+    """Acumulado diario (365 días) de la temporada elegida y de cada temporada de referencia completa."""
+    hist = {}
+    for y in refs:
+        ini, fin = tramo_temporada(y, mes_ini)
+        if y == temporada or ini < diario.index[0] or fin > FECHA_FIN:
+            continue
+        hist[y] = diario.equiv.loc[ini:fin].cumsum().to_numpy()[:365]
+    ini, fin = tramo_temporada(temporada, mes_ini)
+    actual = diario.equiv.loc[ini:min(fin, FECHA_FIN)].cumsum().to_numpy()[:365]
+    return ini, actual, hist
+
+
+def adelanto_dias(acumulado, mediana):
+    """Días de adelanto (+) o atraso (−) respecto de la temporada mediana. None si ya superó el total habitual."""
+    d = len(acumulado) - 1
+    v = acumulado[d]
+    if v > mediana[-1]:
+        return None, None
+    j = int(np.argmax(mediana >= v))
+    return j - d, j
 
 # ================================================================ cabecera: nombre, estado y franja de fuego
 total, esperado = actual.sum(), clima.mediana.reindex(con_dato).sum()
@@ -416,7 +497,76 @@ if region == AREA and n_focos_area == 0:
     st.warning(tr("No hay focos registrados en esta área. Probá con un área más grande o en otra zona.",
                   "There are no hotspots recorded in this area. Try a larger area or a different place."))
     st.stop()
+if focos is not None:
+    diario_zona = conteo_diario(region, bbox, K_ZONA)
+    refs_hoy = ([y for y in range(ref_desde, ref_hasta + 1) if y < FECHA_FIN.year]
+                or [y for y in anios if y < FECHA_FIN.year])
+    h1, h2 = st.columns([3, 1.3])
+    with h1:
+        st.markdown("**" + tr("Situación de los últimos días", "Situation in recent days") + "**")
+    with h2:
+        dias_v = st.radio(tr("Ventana", "Window"), [7, 15, 30], index=2, horizontal=True, key="ventana_dias",
+                          format_func=lambda d: f"{d} {tr('días', 'days')}", label_visibility="collapsed")
+    act_v, ini_v, fin_v, hist_v = ventana_reciente(diario_zona, dias_v, refs_hoy)
 
+    if len(hist_v) >= 5:
+        nivel, pct_v, p75_v, p90_v = nivel_alerta(act_v, hist_v.valor)
+        med_v = float(hist_v.valor.median())
+        periodo_ref = f"{min(hist_v.anio)}–{max(hist_v.anio)}"
+        if med_v > 0:
+            r = act_v / med_v
+            if r >= 1.15:
+                cmp_txt = tr(f"{miles(r, 1)} veces la mediana", f"{r:.1f} times the median")
+            elif r <= 0.87:
+                cmp_txt = tr(f"{100 * (1 - r):.0f} % menos que la mediana", f"{100 * (1 - r):.0f}% below the median")
+            else:
+                cmp_txt = tr("parecido a la mediana", "close to the median")
+        else:
+            cmp_txt = tr("cuando habitualmente no hay focos", "when there are usually no hotspots")
+        mayores = hist_v[hist_v.valor > act_v].sort_values("valor", ascending=False)
+        if act_v > 0 and len(mayores) == 0:
+            extra = tr(" Es el valor más alto de la serie para estas fechas.", " It is the highest value on record for these dates.")
+        elif 0 < len(mayores) <= 3:
+            extra = tr(f" Solo {lista([str(a) for a in mayores.anio])} tuvieron más.",
+                       f" Only {lista([str(a) for a in mayores.anio])} had more.")
+        else:
+            extra = ""
+        texto_v = (tr(f"Del {fecha_txt(ini_v, False)} al {fecha_txt(fin_v)} hubo <b>{miles(act_v)} focos armonizados</b>, "
+                      f"{cmp_txt} de esas mismas fechas en {periodo_ref} ({miles(med_v)}). "
+                      f"Supera al {pct_v:.0f} % de los años de referencia.",
+                      f"From {fecha_txt(ini_v, False)} to {fecha_txt(fin_v)} there were <b>{miles(act_v)} harmonized hotspots</b>, "
+                      f"{cmp_txt} for the same dates in {periodo_ref} ({miles(med_v)}). "
+                      f"It is above {pct_v:.0f}% of the reference years.") + extra)
+        luces = "".join(
+            f"<span class='luz' style='background:{SEMAFORO[n]};box-shadow:0 0 8px {SEMAFORO[n]}'></span>" if n == nivel
+            else "<span class='luz'></span>" for n in ["excepcional", "elevado", "normal"])
+        st.markdown(f"<div class='semaforo' style='border-left:6px solid {SEMAFORO[nivel]}' role='status'>"
+                    f"<div class='luces' aria-hidden='true'>{luces}</div><div>"
+                    f"<div class='nivel'>{ICONO[nivel]} {NIVEL_TXT[nivel]}</div><p>{texto_v}</p></div></div>",
+                    unsafe_allow_html=True)
+
+        # Dónde cae este período entre los años de referencia
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=hist_v.valor, y=[""] * len(hist_v), mode="markers", name=tr("Años de referencia", "Reference years"),
+                                 marker=dict(size=10, color="#9AA5B1", symbol="circle", line=dict(width=1, color="#FFFFFF")),
+                                 customdata=hist_v.anio, hovertemplate="%{customdata}: %{x:,.0f}<extra></extra>"))
+        fig.add_trace(go.Scatter(x=[act_v], y=[""], mode="markers", name=tr("Últimos días", "Recent days"),
+                                 marker=dict(size=17, color=SEMAFORO[nivel], symbol="diamond", line=dict(width=1.5, color=TINTA)),
+                                 hovertemplate=tr("Últimos días", "Recent days") + ": %{x:,.0f}<extra></extra>"))
+        fig.add_vline(x=p75_v, line_dash="dot", line_color=CENIZA, annotation_text="p75", annotation_position="top")
+        fig.add_vline(x=p90_v, line_dash="dash", line_color=CENIZA, annotation_text="p90", annotation_position="top")
+        fig.update_layout(height=150, margin=dict(t=28, b=10, l=10, r=10), showlegend=False,
+                          xaxis_title=tr(f"Focos armonizados en {dias_v} días", f"Harmonized hotspots in {dias_v} days"),
+                          yaxis=dict(visible=False))
+        grafico(fig)
+        st.markdown(f"<p class='nota'>{tr('Cada punto gris es un año de referencia en estas mismas fechas; el rombo es el período actual. Elevado: por encima del 75 % de los años; excepcional: por encima del 90 %. Los últimos días son datos provisorios de tiempo casi real y los años anteriores a 2012 son MODIS armonizado (estimado).', 'Each grey dot is a reference year on these same dates; the diamond is the current period. Elevated: above 75% of years; exceptional: above 90%. The latest days are provisional near-real-time data, and years before 2012 are harmonized MODIS (estimated).')}</p>",
+                    unsafe_allow_html=True)
+        describir(tr(f"Semáforo en «{NIVEL_TXT[nivel]}». ", f"Traffic light at «{NIVEL_TXT[nivel]}». ")
+                  + texto_v.replace("<b>", "").replace("</b>", ""))
+    else:
+        st.info(tr("Hacen falta al menos 5 años de referencia para evaluar los últimos días.",
+                   "At least 5 reference years are needed to assess recent days."))
+        
 if np.isfinite(dif) and len(con_dato):
     periodo = (tr("en todo el año", "for the whole year") if len(con_dato) == 12 else
                tr(f"entre enero y {MESES_LARGOS[int(con_dato.max()) - 1]}", f"from January to {MESES_LARGOS[int(con_dato.max()) - 1]}"))
@@ -470,9 +620,10 @@ if region == AREA:
 if notas:
     st.markdown(f"<p class='nota'>{' '.join(notas)}</p>", unsafe_allow_html=True)
 
-tabs = st.tabs([tr("Comparación con lo habitual", "Compared with usual"), tr("Calendario", "Calendar"),
-                tr("Búsqueda por fechas", "Date search"), tr("Mapa", "Map"), tr("Armonización", "Harmonization"),
-                tr("Validación", "Validation"), tr("Datos", "Data"), tr("Cómo lo hicimos", "How we built it")])
+tab_temporada, *tabs = st.tabs([tr("Temporada en curso", "Current season"),
+                                tr("Comparación con lo habitual", "Compared with usual"), tr("Calendario", "Calendar"),
+                                tr("Búsqueda por fechas", "Date search"), tr("Mapa", "Map"), tr("Armonización", "Harmonization"),
+                                tr("Validación", "Validation"), tr("Datos", "Data"), tr("Cómo lo hicimos", "How we built it")])
 
 
 # ================================================================ mapas (Leaflet)
@@ -552,6 +703,122 @@ def limites_zona():
 
 
 # ================================================================ 1. comparación
+with tab_temporada:
+    if focos is None:
+        st.warning(tr("Esta sección necesita los archivos de focos individuales (carpeta `focos`).",
+                      "This section needs the individual hotspot files (`focos` folder)."))
+    else:
+        k1, k2 = st.columns([1, 3])
+        with k1:
+            mes_ini = st.selectbox(tr("La temporada empieza en", "Season starts in"), [1, 7], key="mes_ini_temporada",
+                                   format_func=lambda m: MESES_LARGOS[m - 1].capitalize(),
+                                   help=tr("Julio sirve para zonas cuya temporada cruza el cambio de año, como la Patagonia andina.",
+                                           "July is useful for areas whose season spans the new year, such as Andean Patagonia."))
+        etq = nombre_temporada(anio, mes_ini)
+        ini_t, cur, hist = curvas_temporada(diario_zona, mes_ini, anio, range(ref_desde, ref_hasta + 1))
+        if ini_t > FECHA_FIN:
+            st.info(tr(f"La temporada {etq} todavía no empezó.", f"The {etq} season has not started yet."))
+        elif len(hist) < 5:
+            st.info(tr("Hacen falta al menos 5 temporadas completas de referencia. Ampliá el período de referencia en la barra lateral.",
+                       "At least 5 complete reference seasons are needed. Widen the reference period in the sidebar."))
+        else:
+            M = np.vstack(list(hist.values()))
+            p10, p50, p90 = np.percentile(M, [10, 50, 90], axis=0)
+            x = pd.date_range(ini_t, periods=365)
+            total_med = p50[-1]
+            record = max(hist, key=lambda y: hist[y][-1])
+            d = len(cur) - 1
+            val = float(cur[d]) if d >= 0 else 0.0
+
+            fig = go.Figure()
+            if total_med > 0:                                  # temporada habitual: del 10 % al 90 % de lo acumulado
+                j10, j90 = int(np.argmax(p50 >= .1 * total_med)), int(np.argmax(p50 >= .9 * total_med))
+                fig.add_vrect(x0=x[j10], x1=x[j90], fillcolor=AMBAR if not ACC else "#BBBBBB", opacity=.10, line_width=0,
+                              annotation_text=tr("Temporada habitual", "Usual season"), annotation_position="top left")
+            fig.add_trace(go.Scatter(x=x, y=p90, mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip"))
+            fig.add_trace(go.Scatter(x=x, y=p10, mode="lines", fill="tonexty", line=dict(width=0), fillcolor=C_BANDA,
+                                     name=tr("Rango habitual (10–90 %)", "Usual range (10–90%)"), hoverinfo="skip"))
+            fig.add_trace(go.Scatter(x=x, y=p50, mode="lines", name=tr("Temporada mediana", "Median season"),
+                                     line=dict(color=CENIZA if not ACC else "#4D4D4D", dash="dash"),
+                                     hovertemplate="%{y:,.0f}<extra>" + tr("mediana", "median") + "</extra>"))
+            fig.add_trace(go.Scatter(x=x, y=hist[record], mode="lines",
+                                     name=tr(f"Récord ({nombre_temporada(record, mes_ini)})", f"Record ({nombre_temporada(record, mes_ini)})"),
+                                     line=dict(color="#9AA5B1", dash="dot", width=1.5),
+                                     hovertemplate="%{y:,.0f}<extra>" + nombre_temporada(record, mes_ini) + "</extra>"))
+            if d >= 0:
+                fig.add_trace(go.Scatter(x=x[:d + 1], y=cur, mode="lines", name=etq, line=dict(color=C_ALTO, width=3.5),
+                                         hovertemplate="%{y:,.0f}<extra>" + etq + "</extra>"))
+                fig.add_trace(go.Scatter(x=[x[d]], y=[val], mode="markers", showlegend=False, hoverinfo="skip",
+                                         marker=dict(size=10, color=C_ALTO, symbol="diamond", line=dict(width=1.5, color="#FFFFFF"))))
+            fig.update_layout(height=440, hovermode="x unified", yaxis_title=tr("Focos armonizados acumulados", "Cumulative harmonized hotspots"),
+                              xaxis=dict(tickformat="%d %b" if EN else "%d/%m"))
+            grafico(fig)
+
+            if d >= 0:
+                med_d = float(p50[d])
+                pct_d = 100 * ((M[:, d] < val).sum() + .5 * (M[:, d] == val).sum()) / len(M)
+                dif_d = 100 * (val - med_d) / med_d if med_d > 0 else np.nan
+                adel, j = adelanto_dias(cur, p50)
+                completa = d == 364
+                # El adelanto o atraso solo tiene sentido con la temporada en marcha: entre el 10 % y el 90 % de la mediana
+                en_curso = total_med > 0 and .1 * total_med <= med_d <= .9 * total_med and val > 0
+                if adel is not None and not en_curso:
+                    adel = j = None
+                    falta = max(total_med - med_d, 0.0)
+                else:
+                    falta = None
+                hoy = tr("al cierre", "at the end") if completa else tr(f"al {fecha_txt(x[d], False)}", f"as of {fecha_txt(x[d], False)}")
+
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric(tr(f"Acumulado {hoy}", f"Cumulative {hoy}"), miles(val),
+                          f"{dif_d:+.0f} %" if np.isfinite(dif_d) else None, delta_color="inverse",
+                          help=tr("Diferencia con la temporada mediana a la misma fecha", "Difference from the median season on the same date"))
+                m2.metric(tr("Mediana a esta fecha", "Median on this date"), miles(med_d))
+                m3.metric(tr("Percentil", "Percentile"), f"{pct_d:.0f}",
+                          help=tr("Porcentaje de temporadas de referencia con menos focos acumulados a esta fecha",
+                                  "Share of reference seasons with fewer cumulative hotspots on this date"))
+                supero = val > total_med > 0
+                if supero:
+                    m4.metric(tr("Ritmo", "Pace"), tr("Sobre el total", "Above total"),
+                              help=tr("Ya acumuló más que una temporada mediana completa", "It already exceeds a full median season"))
+                elif adel is not None:
+                    m4.metric(tr("Ritmo (días)", "Pace (days)"), f"{abs(adel)}",
+                              (tr("adelantada", "ahead") if adel > 0 else tr("atrasada", "behind") if adel < 0
+                               else tr("al ritmo habitual", "on usual pace")), delta_color="off",
+                              help=tr("Cuántos días antes o después la temporada mediana llega a lo acumulado hasta hoy",
+                                      "How many days earlier or later the median season reaches today's cumulative value"))
+                elif falta is not None and not completa:
+                    m4.metric(tr("Resto habitual", "Usual remainder"), miles(falta),
+                              help=tr("Focos que una temporada mediana acumula desde esta fecha hasta el cierre",
+                                      "Hotspots a median season accumulates from this date to its end"))
+
+                if supero:
+                    ritmo = tr(f" Ya superó lo que se acumula en una temporada mediana completa ({miles(total_med)}).",
+                               f" It already exceeds a full median season ({miles(total_med)}).")
+                elif adel is not None and adel != 0:
+                    ritmo = tr(f" Lo acumulado se alcanza habitualmente el {fecha_txt(x[j], False)}: la temporada va "
+                               f"{abs(adel)} días {'adelantada' if adel > 0 else 'atrasada'}.",
+                               f" The cumulative value is usually reached on {fecha_txt(x[j], False)}: the season is "
+                               f"{abs(adel)} days {'ahead' if adel > 0 else 'behind'}.")
+                else:
+                    ritmo = ""
+                if total_med > 0 and not completa:
+                    ritmo += tr(f" Habitualmente a esta fecha ya pasó el {100 * med_d / total_med:.0f} % de la temporada.",
+                                f" Usually {100 * med_d / total_med:.0f}% of the season has passed by this date.")
+                st.markdown(f"<p class='nota'>{tr('Línea gruesa: temporada', 'Thick line: season')} {etq}. "
+                            f"{tr('Banda: rango habitual entre el 10 % y el 90 % de las temporadas', 'Band: usual range between 10% and 90% of seasons')} "
+                            f"{nombre_temporada(min(hist), mes_ini)}–{nombre_temporada(max(hist), mes_ini)}. "
+                            f"{tr('Franja sombreada: temporada habitual, entre el 10 % y el 90 % de lo que acumula la temporada mediana.', 'Shaded strip: usual season, between 10% and 90% of what the median season accumulates.')}"
+                            f"{ritmo} {tr('Se usan focos armonizados (escala VIIRS) aunque se elija otra medida.', 'Harmonized hotspots (VIIRS scale) are used whichever measure is selected.')}</p>",
+                            unsafe_allow_html=True)
+                temp_txt = (tr(f" La temporada habitual va del {fecha_txt(x[j10], False)} al {fecha_txt(x[j90], False)}.",
+                               f" The usual season runs from {fecha_txt(x[j10], False)} to {fecha_txt(x[j90], False)}.")
+                            if total_med > 0 else "")
+                describir(tr(f"Temporada {etq} {hoy}: {miles(val)} focos acumulados, contra una mediana de {miles(med_d)} "
+                             f"(percentil {pct_d:.0f}).", f"Season {etq} {hoy}: {miles(val)} cumulative hotspots, versus a median of "
+                             f"{miles(med_d)} (percentile {pct_d:.0f}).") + ritmo + temp_txt
+                          + tr(f" La temporada récord fue {nombre_temporada(record, mes_ini)} con {miles(hist[record][-1])}.",
+                               f" The record season was {nombre_temporada(record, mes_ini)} with {miles(hist[record][-1])}."))
 with tabs[0]:
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=MESES, y=clima.p90, mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip"))

@@ -20,7 +20,7 @@ from folium.plugins import Draw
 from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 
-VERSION_APP = "v11"
+VERSION_APP = "v12"
 
 # ---- Video de YouTube: peguen acá el link cuando lo suban (por ejemplo "https://youtu.be/XXXXXXXX"). Vacío = no se muestra.
 VIDEO_URL = "https://www.youtube.com/watch?v=7s7YxCgTaYg"
@@ -706,6 +706,9 @@ else:
         st.sidebar.error(tr("El área no puede tener ancho o alto cero.", "The area cannot have zero width or height.", pt="A área não pode ter largura ou altura zero."))
         st.stop()
 
+# El mini-mapa va justo debajo de la zona y las coordenadas (se dibuja más abajo, cuando ya se eligió el año)
+SLOT_MAPA = st.sidebar.container()
+
 if region == AREA:
     medida = "focos"
     st.sidebar.caption(tr("En un área propia la actividad se mide en **focos**.",
@@ -758,9 +761,9 @@ def mini_mapa():
                     showframe=False, bgcolor="rgba(0,0,0,0)")
     fig.update_layout(height=320 if GRANDE else 270, margin=dict(l=0, r=0, t=0, b=0), showlegend=False,
                       paper_bgcolor="rgba(0,0,0,0)", template=None)
-    st.sidebar.plotly_chart(fig, width="stretch", config={"staticPlot": True, "displayModeBar": False,
+    SLOT_MAPA.plotly_chart(fig, width="stretch", config={"staticPlot": True, "displayModeBar": False,
                                                           "topojsonURL": "app/static/topojson/"})
-    st.sidebar.caption(tr(f"Dónde queda la zona. En color, las celdas con fuego en {anio}"
+    SLOT_MAPA.caption(tr(f"Dónde queda la zona. En color, las celdas con fuego en {anio}"
                           + (" dentro de la zona." if region != PAIS else "."),
                           f"Where the area is. In color, cells with fire in {anio}"
                           + (" inside the area." if region != PAIS else "."),
@@ -768,7 +771,6 @@ def mini_mapa():
                              + (" dentro da área." if region != PAIS else ".")))
 
 
-st.sidebar.divider()
 mini_mapa()
 
 # ---- Link para compartir: la dirección de la página guarda la vista actual
@@ -1103,8 +1105,33 @@ resumen_voz = (f"{nombre_zona}. " + frase_estado.replace("<b>", "").replace("</b
                            f"The most active month was {MESES_LARGOS[pico - 1]}.", pt=f"O mês com mais atividade foi {MESES_LARGOS[pico - 1]}.") if pico else ""))
 boton_voz(resumen_voz, tr("Escuchar el resumen", "Listen to the summary", pt="Ouvir o resumo"))
 
-st.markdown(f"<div class='seccion-titulo'><span>{tr('Sección', 'Section', pt='Seção')}</span>{SECCIONES[SECCION]}</div>",
+st.markdown(f"<div class='seccion-titulo' id='seccion-elegida'><span>{tr('Sección', 'Section', pt='Seção')}</span>{SECCIONES[SECCION]}</div>",
             unsafe_allow_html=True)
+
+# Al tocar una solapa del menú, la página baja sola hasta el comienzo de esa sección (debajo del botón de audio)
+if st.session_state.get("_sec_prev") is not None and st.session_state._sec_prev != SECCION:
+    st.session_state["_scroll_n"] = st.session_state.get("_scroll_n", 0) + 1
+    _scroll_js = """<script>
+// pedido %d
+const D = window.parent.document;
+function bajar() {
+  const t = D.getElementById("seccion-elegida");
+  if (!t) return false;
+  const nav = D.querySelector('[data-testid="stLayoutWrapper"]:has(> .st-key-nav)') || D.querySelector(".st-key-nav");
+  const tope = nav ? nav.getBoundingClientRect().bottom : 120;
+  t.style.scrollMarginTop = (Math.max(tope, 60) + 12) + "px";
+  const quieto = window.parent.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  t.scrollIntoView({behavior: quieto ? "auto" : "smooth", block: "start"});
+  return true;
+}
+setTimeout(bajar, 250);
+setTimeout(bajar, 900);
+</script>""" % st.session_state["_scroll_n"]
+    if hasattr(st, "iframe"):
+        st.iframe(_scroll_js, height=1)
+    else:
+        components.html(_scroll_js, height=0)
+st.session_state["_sec_prev"] = SECCION
 
 
 # ================================================================ mapas (Leaflet)

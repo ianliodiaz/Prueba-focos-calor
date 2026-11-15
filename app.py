@@ -20,7 +20,7 @@ from folium.plugins import Draw
 from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 
-VERSION_APP = "v10.2"
+VERSION_APP = "v11"
 
 # ---- Video de YouTube: peguen acá el link cuando lo suban (por ejemplo "https://youtu.be/XXXXXXXX"). Vacío = no se muestra.
 VIDEO_URL = "https://www.youtube.com/watch?v=7s7YxCgTaYg"
@@ -56,6 +56,8 @@ if "_params_ok" not in st.session_state:
             st.session_state.update({"tipo_zona_val": "area", "lat_s": la0, "lat_n": la1, "lon_o": lo0, "lon_e": lo1})
         elif qp.get("zona"):
             st.session_state.update({"tipo_zona_val": "region", "region_val": qp["zona"]})
+        if qp.get("sec", "").isdigit() and int(qp["sec"]) < 9:
+            st.session_state.seccion = int(qp["sec"])
         if qp.get("medida") in ("focos", "dias", "frp"):
             st.session_state.medida_val = qp["medida"]
         if qp.get("anio"):
@@ -202,6 +204,38 @@ h1 {{ font-weight: 800; font-size: 2.35rem !important; line-height: 1.08; margin
 [data-testid="stMetric"] {{ border-left: 3px solid {BRASA}; padding: .15rem 0 .15rem .8rem; }}
 [data-testid="stMetricLabel"] p {{ color: {CENIZA} !important; font-size: .9rem; }}
 [data-testid="stMetricValue"] {{ font-stretch: 112%; font-weight: 700; color: {TINTA}; }}
+/* Menú de secciones: recuadro arriba de todo que queda fijo al bajar */
+[data-testid="stLayoutWrapper"]:has(> .st-key-nav) {{ position: sticky; top: 3.75rem; z-index: 95; }}
+.st-key-nav {{ background: #FFFFFF; border: 2px solid {TINTA};
+  border-radius: 12px; padding: .55rem 1rem .5rem 1rem; box-shadow: 0 6px 18px rgba(22, 35, 46, .10); gap: 0; }}
+.nav-titulo {{ font-size: .82rem; font-weight: 800; color: {BRASA}; margin: 0 0 .1rem 0; }}
+.st-key-nav [role="radiogroup"] {{ gap: .15rem 1.5rem; flex-wrap: wrap; }}
+.st-key-nav [data-testid="stRadioOption"] > div > div:first-child {{ display: none; }}
+.st-key-nav [role="radiogroup"] label {{ padding: 0; margin: 0; cursor: pointer; }}
+.st-key-nav [role="radiogroup"] label p {{ font-size: 1.04rem; font-weight: 700; color: {TINTA}; padding: .3rem 0 .25rem 0;
+  border-bottom: 3px solid transparent; }}
+.st-key-nav [role="radiogroup"] label:hover p {{ border-bottom-color: #B9C6CF; }}
+.st-key-nav [data-testid="stRadioOption"][data-selected="true"] p {{ color: {BRASA}; border-bottom-color: {BRASA}; }}
+.st-key-nav [role="radiogroup"] label:has(input:focus-visible) p {{ outline: 3px solid #0050FF; outline-offset: 2px; }}
+.seccion-titulo {{ margin: 1.8rem 0 .8rem 0; padding-top: 1rem; border-top: 2px solid {TINTA}; font-size: 1.7rem;
+  font-weight: 800; color: {TINTA}; line-height: 1.15; }}
+.seccion-titulo span {{ display: block; font-size: .82rem; font-weight: 800; color: {BRASA}; margin-bottom: .2rem; }}
+/* Casos destacados como fichas */
+.casos-titulo {{ font-weight: 800; font-size: 1.1rem; margin: .4rem 0 .3rem 0; color: {TINTA}; }}
+.casos-titulo span {{ font-weight: 500; font-size: .95rem; color: {CENIZA}; margin-left: .7rem; }}
+[class*="st-key-ficha_"] {{ background: #FFFFFF; border-color: #CBD5DB !important; }}
+.ficha-anio {{ font-size: 2.5rem; font-weight: 800; line-height: 1; letter-spacing: -.02em; color: {TINTA};
+  font-variant-numeric: tabular-nums; }}
+.ficha-lugar {{ font-size: 1rem; font-weight: 700; color: {CENIZA}; margin-top: .25rem; }}
+.ficha-pct {{ font-size: 1.35rem; font-weight: 800; margin-top: .45rem; font-variant-numeric: tabular-nums; }}
+.ficha-pct.sube {{ color: {BRASA}; }}
+.ficha-pct.baja {{ color: {AGUA}; }}
+.ficha-pct span {{ display: block; font-size: .8rem; font-weight: 600; color: {CENIZA}; }}
+.nota-caso {{ border-left: 4px solid {BRASA}; background: #FFFFFF; padding: .75rem 1rem; border-radius: 0 8px 8px 0;
+  margin: .6rem 0 1rem 0; color: {TINTA}; }}
+/* Avisos con el estilo de la página en lugar del celeste por defecto */
+[data-testid="stMain"] [data-testid="stAlert"] > div {{ background: #FFFFFF !important; border-left: 4px solid {AGUA};
+  color: {TINTA}; border-radius: 0 8px 8px 0; }}
 /* Pestañas como botones grandes, siempre visibles arriba al bajar por la página */
 .explora {{ font-weight: 800; font-size: 1.15rem; margin: 1.2rem 0 .2rem 0; color: {TINTA}; }}
 [data-testid="stTabs"] [role="tablist"] {{ gap: .5rem; flex-wrap: wrap; overflow: visible !important;
@@ -245,6 +279,8 @@ html {{ font-size: 21px; }}
 [data-testid="stMetricValue"] {{ font-size: 2.3rem; }}
 [data-testid="stMetricLabel"] p {{ color: {TINTA} !important; font-size: 1.05rem; }}
 [data-testid="stTabs"] [role="tab"] p {{ font-size: 1.25rem !important; }}
+.st-key-nav [data-testid="stRadioOption"][data-selected="true"] p {{ color: {BRASA} !important; }}
+.ficha-anio {{ font-size: 3rem; }}
 [data-testid="stTabs"] [role="tab"][aria-selected="false"] p {{ color: {TINTA} !important; }}
 :focus-visible {{ outline: 4px solid #0050FF !important; outline-offset: 3px; }}
 a {{ text-decoration: underline; }}
@@ -274,7 +310,7 @@ def _cerrar_bienvenida():
     st.session_state.paso_bv = 0
 
 
-@st.dialog("🔥 FIREN'T", width="large", on_dismiss=_cerrar_bienvenida)
+@st.dialog("FIREN'T", width="large", on_dismiss=_cerrar_bienvenida)
 def bienvenida():
     paso = st.session_state.get("paso_bv", 0)
     if paso == 0:
@@ -291,7 +327,7 @@ def bienvenida():
                                 gn="Mba'éichapa! ¿Preferís ver la página con letra más grande y más contraste?"))
         st.markdown(tr("Podés cambiarlo cuando quieras con el botón 👁️, arriba a la derecha.",
                        "You can change it anytime with the 👁️ button, top right.", pt="Você pode mudar isso quando quiser com o botão 👁️, no canto superior direito."))
-        if st.button("🔍 " + tr("Sí, letra grande", "Yes, larger text", pt="Sim, letra grande", gn="Heẽ (Sí), letra grande"),
+        if st.button(tr("Sí, letra grande", "Yes, larger text", pt="Sim, letra grande", gn="Heẽ (Sí), letra grande"),
                      key="bv_grande_si", type="primary", width="stretch"):
             st.session_state.grande, st.session_state.lupa, st.session_state.paso_bv = True, True, 2
             st.rerun()
@@ -306,7 +342,7 @@ def bienvenida():
                        "descripciones en texto.",
                        "If you choose «Yes», charts use adapted colors, markers that do not depend on color and "
                        "text descriptions.", pt="Se escolher «Sim», os gráficos usam cores adaptadas, marcas que não dependem da cor e descrições em texto."))
-        if st.button("🎨 " + tr("Sí, usar colores adaptados", "Yes, use adapted colors", pt="Sim, usar cores adaptadas", gn="Heẽ (Sí), colores adaptados"),
+        if st.button(tr("Sí, usar colores adaptados", "Yes, use adapted colors", pt="Sim, usar cores adaptadas", gn="Heẽ (Sí), colores adaptados"),
                      key="bv_acc_si", type="primary", width="stretch"):
             st.session_state.acc = True
             _cerrar_bienvenida()
@@ -434,15 +470,15 @@ function instalarLupa() {
 def inyectar_lupa(activa, zoom):
     "Lupa que sigue al cursor. Se instala una sola vez en la página y se prende o apaga desde el 👁️."
     textos = {
-        "prendida": tr("🔍 Lupa prendida ({z}×). Atajos: Alt + L la apaga o prende · Alt + / Alt − cambian el aumento · "
+        "prendida": tr("Lupa prendida ({z}×). Atajos: Alt + L la apaga o prende · Alt + / Alt − cambian el aumento · "
                        "Esc la oculta. Para sacarla del todo: botón 👁️, arriba a la derecha.",
-                       "🔍 Magnifier on ({z}×). Shortcuts: Alt + L turns it off or on · Alt + / Alt − change the zoom · "
+                       "Magnifier on ({z}×). Shortcuts: Alt + L turns it off or on · Alt + / Alt − change the zoom · "
                        "Esc hides it. To remove it for good: 👁️ button, top right.",
-                       pt="🔍 Lupa ligada ({z}×). Atalhos: Alt + L desliga ou liga · Alt + / Alt − mudam o aumento · "
+                       pt="Lupa ligada ({z}×). Atalhos: Alt + L desliga ou liga · Alt + / Alt − mudam o aumento · "
                           "Esc a esconde. Para tirá-la de vez: botão 👁️, no canto superior direito."),
-        "apagada": tr("🔍 Lupa apagada. Alt + L o el botón la vuelven a prender.",
-                      "🔍 Magnifier off. Alt + L or the button turns it back on.",
-                      pt="🔍 Lupa desligada. Alt + L ou o botão a ligam de novo."),
+        "apagada": tr("Lupa apagada. Alt + L o el botón la vuelven a prender.",
+                      "Magnifier off. Alt + L or the button turns it back on.",
+                      pt="Lupa desligada. Alt + L ou o botão a ligam de novo."),
         "apagar": tr("Apagar la lupa", "Turn off magnifier", pt="Desligar a lupa"),
         "prender": tr("Prender la lupa", "Turn on magnifier", pt="Ligar a lupa"),
     }
@@ -466,7 +502,7 @@ def boton_voz(texto, etiqueta):
     "Botón que lee un texto en voz alta con la voz del navegador (sin servicios externos)."
     html = f"""
 <button id="b" aria-label="{etiqueta}" style="font:600 {16 if GRANDE else 14}px Archivo,system-ui,sans-serif;
- padding:.45rem .9rem;border:1.5px solid {TINTA};border-radius:6px;background:#fff;color:{TINTA};cursor:pointer">🔊 {etiqueta}</button>
+ padding:.45rem .9rem;border:1.5px solid {TINTA};border-radius:6px;background:#fff;color:{TINTA};cursor:pointer;display:inline-flex;align-items:center;gap:.45rem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{BRASA}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19.5 5.5a9 9 0 0 1 0 13"/></svg>{etiqueta}</button>
 <script>
 const texto = {json.dumps(texto)}, lang = "{VOZ[IDIOMA]}";
 document.getElementById("b").onclick = () => {{
@@ -637,14 +673,14 @@ def control(func, nombre, opciones, **kw):
 st.sidebar.markdown("<div class='marca'>FIREN<span>'</span>T</div>", unsafe_allow_html=True)
 st.sidebar.caption(tr("Calendario armonizado de focos de calor · Argentina", "Harmonized hotspot calendar · Argentina", pt="Calendário harmonizado de focos de calor · Argentina")
                    + f" · {VERSION_APP}")
-st.sidebar.selectbox("🌐 " + tr("Idioma", "Language", "Idioma") + " / Language", IDIOMAS, key="idioma",
+st.sidebar.selectbox(tr("Idioma", "Language", "Idioma") + " / Language", IDIOMAS, key="idioma",
                      format_func=lambda l_: NOMBRE_IDIOMA[l_] + (" (prototipo)" if l_ == "GN" else ""))
 if GN:
     st.sidebar.info("**Guaraní (prototipo).** Esta traducción es básica y está en revisión: solo algunas palabras están en "
                     "guaraní y el resto en español. Si hablás guaraní, tu ayuda es bienvenida: dejanos tus correcciones y "
-                    "sugerencias en la pestaña **💬 Comentarios**. ¡Aguyje (gracias)!")
+                    "sugerencias en la sección **Comentarios**. ¡Aguyje (gracias)!")
 if PT:
-    st.sidebar.caption("Tradução feita com apoio de inteligência artificial. Sugestões são bem-vindas na aba 💬 Comentários.")
+    st.sidebar.caption("Tradução feita com apoio de inteligência artificial. Sugestões são bem-vindas na seção Comentários.")
 
 opciones_zona = ["region", "area"] if focos is not None else ["region"]
 tipo_zona = control(st.sidebar.radio, "tipo_zona", opciones_zona, label=tr("Zona", "Area", pt="Área"), horizontal=True,
@@ -737,6 +773,8 @@ mini_mapa()
 
 # ---- Link para compartir: la dirección de la página guarda la vista actual
 params = {"lang": IDIOMA, "anio": str(anio), "ref": f"{ref_desde}-{ref_hasta}"}
+if st.session_state.get("seccion"):
+    params["sec"] = str(st.session_state.seccion)
 if region == AREA:
     params.update(zona="area", area=",".join(f"{x:.2f}" for x in bbox))
 else:
@@ -755,7 +793,7 @@ except Exception:
 URL_COMPARTIR = (BASE_URL or "https://<dirección-de-la-página>") + "?" + urllib.parse.urlencode(params)
 
 st.sidebar.divider()
-with st.sidebar.popover("🔗 " + tr("Compartir esta vista", "Share this view", pt="Compartilhar esta visualização"), width="stretch"):
+with st.sidebar.popover(tr("Compartir esta vista", "Share this view", pt="Compartilhar esta visualização"), icon=":material/link:", width="stretch"):
     st.markdown(tr("Copiá este link (botón de la derecha). Quien lo abra ve la misma zona, año, medida, idioma y "
                    "configuración de accesibilidad.",
                    "Copy this link (button on the right). Whoever opens it sees the same area, year, measure, language "
@@ -766,10 +804,10 @@ contexto_form = (f"zona: {region if region != AREA else 'area ' + params['area']
 if VIDEO_ID:
     def _abrir_video():
         st.session_state.video_cerrado = False
-    st.sidebar.button("▶ " + tr("Video de presentación", "Presentation video", pt="Vídeo de apresentação"),
+    st.sidebar.button(tr("Video de presentación", "Presentation video", pt="Vídeo de apresentação"), icon=":material/play_circle:",
                       on_click=_abrir_video, width="stretch", key="abrir_video")
-st.sidebar.link_button("💬 " + tr("Comentar o reportar un dato raro", "Comment or report odd data", pt="Comentar ou relatar um dado estranho"),
-                       FORM_URL + urllib.parse.quote(contexto_form), width="stretch")
+st.sidebar.link_button(tr("Comentar o reportar un dato raro", "Comment or report odd data", pt="Comentar ou relatar um dado estranho"),
+                       FORM_URL + urllib.parse.quote(contexto_form), icon=":material/chat_bubble:", width="stretch")
 st.sidebar.divider()
 fs = FECHAS_SENSOR
 st.sidebar.caption(
@@ -809,10 +847,25 @@ clima = clima.reindex(range(1, 13))
 actual = dr[dr.anio == anio].set_index("mes")[col].reindex(range(1, 13))
 con_dato = actual.dropna().index
 
+# ================================================================ menú de secciones (arriba de todo, fijo al bajar)
+SECCIONES = [tr("Comparación con lo habitual", "Compared with usual", pt="Comparação com o habitual"),
+             tr("Calendario", "Calendar", pt="Calendário"),
+             tr("Búsqueda por fechas", "Date search", pt="Busca por datas"),
+             tr("Mapa", "Map", pt="Mapa"),
+             tr("Armonización", "Harmonization", pt="Harmonização"),
+             tr("Validación", "Validation", pt="Validação"),
+             tr("Datos", "Data", pt="Dados"),
+             tr("Cómo lo hicimos", "How we built it", pt="Como fizemos"),
+             tr("Comentarios", "Comments", pt="Comentários")]
+with st.container(key="nav"):
+    st.markdown("<p class='nav-titulo'>" + tr("Secciones", "Sections", pt="Seções") + "</p>", unsafe_allow_html=True)
+    SECCION = st.radio(tr("Secciones", "Sections", pt="Seções"), list(range(len(SECCIONES))), key="seccion",
+                       horizontal=True, label_visibility="collapsed", format_func=lambda i: SECCIONES[i])
+
 # ================================================================ accesibilidad
-cab1, cab2 = st.columns([12, 1])
+cab1, cab2 = st.columns([10, 2], vertical_alignment="top")
 with cab2:
-    with st.popover("👁️", help=tr("Accesibilidad: letra grande, alto contraste, colores para daltonismo y descripciones",
+    with st.popover(tr("Accesibilidad", "Accessibility", pt="Acessibilidade"), icon=":material/visibility:", width="stretch", help=tr("Accesibilidad: letra grande, alto contraste, colores para daltonismo y descripciones",
                                   "Accessibility: larger text, high contrast, colorblind-safe colors and descriptions", pt="Acessibilidade: letra grande, alto contraste, cores para daltonismo e descrições")):
         st.toggle(tr("Letra grande y alto contraste", "Larger text and high contrast", pt="Letra grande e alto contraste"), key="grande")
         st.toggle(tr("Colores para daltonismo y descripciones", "Colorblind-safe colors and descriptions", pt="Cores para daltonismo e descrições"), key="acc")
@@ -924,22 +977,41 @@ def _ir_a_caso(zona, a_):
                              "ref_val": (2003, a_ - 1)})
 
 
+@st.cache_data(show_spinner=False)
+def pct_caso(zona, a_):
+    "Diferencia del año con lo habitual (mediana 2003 hasta el año anterior), en focos armonizados."
+    t = serie[serie.region == zona]
+    act = t[t.anio == a_].set_index("mes").focos_equiv.dropna()
+    ref_ = t[t.anio.between(2003, a_ - 1)].groupby("mes").focos_equiv.median()
+    base = ref_.reindex(act.index).sum()
+    return 100 * (act.sum() / base - 1) if base else 0.0
+
+
+caso_activo = next((c for c in CASOS if region == c[1] and anio == c[2]), None)
 with st.container(key="casos"):
-    st.markdown("**" + tr("Casos destacados: probá con un clic", "Featured cases: try one click",
-                          pt="Casos em destaque: experimente com um clique") + "**")
+    st.markdown("<p class='casos-titulo'>" + tr("Casos destacados", "Featured cases", pt="Casos em destaque")
+                + "<span>" + tr("Elegí uno para cargar la zona y el año", "Pick one to load its area and year",
+                                pt="Escolha um para carregar a área e o ano") + "</span></p>", unsafe_allow_html=True)
     cols_c = st.columns(len(CASOS))
-    for col_, (clave, zona_c, anio_c, icono, etiqueta, _) in zip(cols_c, CASOS):
-        col_.button(f"{icono} {etiqueta}", key=f"caso_{clave}", width="stretch", on_click=_ir_a_caso,
-                    args=(zona_c, anio_c))
-for clave, zona_c, anio_c, icono, etiqueta, texto_c in CASOS:
-    if region == zona_c and anio == anio_c:
-        st.info(f"{icono} **{etiqueta}.** {texto_c}")
+    for col_, (clave, zona_c, anio_c, _, etiqueta, _) in zip(cols_c, CASOS):
+        v_ = pct_caso(zona_c, anio_c)
+        with col_.container(border=True, key=f"ficha_{clave}"):
+            st.markdown(f"<div class='ficha'><div class='ficha-anio'>{anio_c}</div>"
+                        f"<div class='ficha-lugar'>{zona_txt(zona_c)}</div>"
+                        f"<div class='ficha-pct {'sube' if v_ > 0 else 'baja'}'>{v_:+.0f} %"
+                        f"<span>{tr('frente a lo habitual', 'vs. usual', pt='frente ao habitual')}</span></div></div>",
+                        unsafe_allow_html=True)
+            st.button(tr("Ver este caso", "See this case", pt="Ver este caso"), key=f"caso_{clave}", width="stretch",
+                      on_click=_ir_a_caso, args=(zona_c, anio_c), icon=":material/arrow_forward:",
+                      type="primary" if caso_activo and caso_activo[0] == clave else "secondary")
+if caso_activo:
+    st.markdown(f"<div class='nota-caso'><b>{caso_activo[4]}.</b> {caso_activo[5]}</div>", unsafe_allow_html=True)
 
 # ---- Video de presentación: aparece después de la bienvenida y se puede cerrar con la cruz
 if VIDEO_ID and not st.session_state.get("video_cerrado") and st.session_state.get("bienvenida_hecha"):
     with st.container(border=True):
         t1_, t2_ = st.columns([3, 1.3], vertical_alignment="center")
-        t1_.markdown("### ▶ " + tr("Video de presentación", "Presentation video", pt="Vídeo de apresentação"))
+        t1_.markdown("### " + tr("Video de presentación", "Presentation video", pt="Vídeo de apresentação"))
         if t2_.button("✕  " + tr("Cerrar y ver la página", "Close and see the page", pt="Fechar e ver a página"),
                       key="cerrar_video", width="stretch",
                       help=tr("Cerrar el video", "Close the video", pt="Fechar o vídeo")):
@@ -948,9 +1020,9 @@ if VIDEO_ID and not st.session_state.get("video_cerrado") and st.session_state.g
         _, vc_, _ = st.columns([1, 6, 1])
         with vc_:
             mostrar_video(alto=420 if not GRANDE else 480)
-        st.caption(tr("Podés volver a verlo desde el botón «▶ Video de presentación» de la barra lateral.",
-                      "You can watch it again from the «▶ Presentation video» button in the sidebar.",
-                      pt="Você pode vê-lo de novo pelo botão «▶ Vídeo de apresentação» da barra lateral."))
+        st.caption(tr("Podés volver a verlo desde el botón «Video de presentación» de la barra lateral.",
+                      "You can watch it again from the «Presentation video» button in the sidebar.",
+                      pt="Você pode vê-lo de novo pelo botão «Vídeo de apresentação» da barra lateral."))
 
 if region == AREA and n_focos_area == 0:
     st.warning(tr("No hay focos registrados en esta área. Probá con un área más grande o en otra zona.",
@@ -1031,17 +1103,8 @@ resumen_voz = (f"{nombre_zona}. " + frase_estado.replace("<b>", "").replace("</b
                            f"The most active month was {MESES_LARGOS[pico - 1]}.", pt=f"O mês com mais atividade foi {MESES_LARGOS[pico - 1]}.") if pico else ""))
 boton_voz(resumen_voz, tr("Escuchar el resumen", "Listen to the summary", pt="Ouvir o resumo"))
 
-st.markdown("<p class='explora'>" + tr("Explorá los datos: elegí una sección", "Explore the data: choose a section",
-                                        pt="Explore os dados: escolha uma seção") + "</p>", unsafe_allow_html=True)
-tabs = st.tabs(["📊 " + tr("Comparación con lo habitual", "Compared with usual", pt="Comparação com o habitual"),
-                "📅 " + tr("Calendario", "Calendar", pt="Calendário"),
-                "🔎 " + tr("Búsqueda por fechas", "Date search", pt="Busca por datas"),
-                "🗺️ " + tr("Mapa", "Map", pt="Mapa"),
-                "⚖️ " + tr("Armonización", "Harmonization", pt="Harmonização"),
-                "✅ " + tr("Validación", "Validation", pt="Validação"),
-                "📂 " + tr("Datos", "Data", pt="Dados"),
-                "🧪 " + tr("Cómo lo hicimos", "How we built it", pt="Como fizemos"),
-                "💬 " + tr("Comentarios", "Comments", pt="Comentários")])
+st.markdown(f"<div class='seccion-titulo'><span>{tr('Sección', 'Section', pt='Seção')}</span>{SECCIONES[SECCION]}</div>",
+            unsafe_allow_html=True)
 
 
 # ================================================================ mapas (Leaflet)
@@ -1163,7 +1226,7 @@ def limites_zona():
 
 
 # ================================================================ 1. comparación
-with tabs[0]:
+if SECCION == 0:
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=MESES, y=clima.p90, mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip"))
     fig.add_trace(go.Scatter(x=MESES, y=clima.p10, mode="lines", fill="tonexty", line=dict(width=0), fillcolor=C_BANDA,
@@ -1252,7 +1315,7 @@ with tabs[0]:
                      if anio <= 2025 else tr(f"{anio} está incompleto.", f"{anio} is incomplete.", pt=f"{anio} está incompleto.")))
 
 # ================================================================ 2. calendario
-with tabs[1]:
+if SECCION == 1:
     st.markdown(tr("El **calendario de actividad de fuego**: cada casillero es un mes. Muestra en qué meses se concentra el "
                    "fuego en la zona y qué años fueron excepcionales.",
                    "The **burning activity calendar**: each cell is one month. It shows when fire concentrates in the "
@@ -1293,7 +1356,7 @@ with tabs[1]:
                  "Each cell shows its value (k = thousands).", pt=f"Os meses com mais atividade habitual são {lista([MESES_LARGOS[m - 1] for m in temporada])}. Os três meses mais extremos da série foram {lista([f'{MESES_LARGOS[m - 1]} de {a} ({miles(v)})' for (a, m), v in extremos.items()])}. Cada quadrado mostra seu valor (k = milhares)."))
 
 # ================================================================ 3. búsqueda por fechas
-with tabs[2]:
+if SECCION == 2:
     if focos is None:
         st.warning(tr("Esta sección necesita los archivos de focos individuales (carpeta `focos`).",
                       "This section needs the individual hotspot files (`focos` folder).", pt="Esta seção precisa dos arquivos de focos individuais (pasta `focos`)."))
@@ -1430,7 +1493,7 @@ with tabs[2]:
                                icon=":material/download:")
 
 # ================================================================ 4. mapa
-with tabs[3]:
+if SECCION == 3:
     ca, cb = st.columns([1, 3.2])
     with ca:
         modo_mapa = st.radio(tr("Mostrar", "Show", pt="Mostrar"), ["anio", "mes", "dif"],
@@ -1531,7 +1594,7 @@ with tabs[3]:
                      for r in top.itertuples()]) + ".")
 
 # ================================================================ 5. armonización
-with tabs[4]:
+if SECCION == 4:
     st.subheader(tr("El problema", "The problem", pt="O problema"))
     st.markdown(tr("MODIS (satélites Terra y Aqua, píxel de ~1 km) y VIIRS (satélite Suomi NPP, píxel de 375 m) miden distinto: "
                    "VIIRS divide cada incendio en más píxeles y ve fuegos más chicos. Si se pegan las dos series, parece que el fuego "
@@ -1658,7 +1721,7 @@ with tabs[4]:
         grafico(fig)
 
 # ================================================================ 6. validación
-with tabs[5]:
+if SECCION == 5:
     st.markdown(tr("Si la armonización es buena, **los años excepcionales tienen que aparecer igual** sin importar cómo se mida el "
                    "fuego. Cada serie (toda Argentina) se expresa como índice: 100 = año promedio.",
                    "If the harmonization works, **exceptional years must show up the same way** however fire is measured. Each "
@@ -1742,7 +1805,7 @@ with tabs[5]:
                          f"for hotspots is {v.iloc[0, 1]:.1f}%.", pt=f"O NOAA-20 e o S-NPP detectam quase o mesmo: a relação é {v.iloc[0, 0]:.2f} e o erro mensal médio em focos é {v.iloc[0, 1]:.1f} %."))
 
 # ================================================================ 7. datos
-with tabs[6]:
+if SECCION == 6:
     st.markdown(tr("Los datos mensuales que usa la página, para consultarlos o descargarlos. Para los **focos individuales** de un "
                    "período, usá **Búsqueda por fechas**.",
                    "The monthly data behind the page, to browse or download. For the **individual hotspots** of a period, use "
@@ -1793,7 +1856,7 @@ with tabs[6]:
                    "[CONAE Hotspot Catalog](https://catalogos5.conae.gov.ar/catalogoFocos/).", pt="**Fontes originais:** [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/download/) (MODIS C6.1 e VIIRS Suomi NPP e NOAA-20 C2) · [Catálogo de Focos de Calor da CONAE](https://catalogos5.conae.gov.ar/catalogoFocos/)."))
 
 # ================================================================ 8. cómo lo hicimos
-with tabs[7]:
+if SECCION == 7:
     res_f = pd.DataFrame(MET["resultados"]["focos"]).set_index("método")
     elegido_f = MET["elegido"]["focos"]
     fac = pd.Series(FACTORES)
@@ -2182,8 +2245,8 @@ dados reais do NASA FIRMS, e a equipe definiu o escopo, revisou os métodos e to
     st.markdown(texto, unsafe_allow_html=True)
 
 # ================================================================ 9. comentarios
-with tabs[8]:
-    st.subheader("💬 " + tr("Comentarios de la comunidad", "Community comments", pt="Comentários da comunidade"))
+if SECCION == 8:
+    st.subheader(tr("Comentarios de la comunidad", "Community comments", pt="Comentários da comunidade"))
     st.markdown(tr(
         "¿Viste algo raro en los datos, encontraste un error o tenés una sugerencia? Dejanos un comentario. El formulario se "
         "abre con la zona, el año y la medida que estás mirando, así podemos revisar exactamente lo mismo. Los comentarios se "
@@ -2191,8 +2254,8 @@ with tabs[8]:
         "Did you see something odd in the data, find an error or have a suggestion? Leave us a comment. The form opens with "
         "the area, year and measure you are looking at, so we can check exactly the same thing. Comments are published here "
         "after the team reviews them.", pt="Viu algo estranho nos dados, encontrou um erro ou tem uma sugestão? Deixe um comentário. O formulário abre com a área, o ano e a medida que você está olhando, para podermos revisar exatamente o mesmo. Os comentários são publicados aqui depois que a equipe os revisa."))
-    st.link_button("💬 " + tr("Comentar o reportar un dato raro", "Comment or report odd data", pt="Comentar ou relatar um dado estranho"),
-                   FORM_URL + urllib.parse.quote(contexto_form), type="primary")
+    st.link_button(tr("Comentar o reportar un dato raro", "Comment or report odd data", pt="Comentar ou relatar um dado estranho"),
+                   FORM_URL + urllib.parse.quote(contexto_form), icon=":material/chat_bubble:", type="primary")
     st.caption(tr("No incluyas datos personales (teléfono, dirección, email): tu comentario puede publicarse.",
                   "Do not include personal data (phone, address, email): your comment may be published.", pt="Não inclua dados pessoais (telefone, endereço, e-mail): seu comentário pode ser publicado."))
 

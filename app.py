@@ -20,7 +20,7 @@ from folium.plugins import Draw
 from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 
-VERSION_APP = "v9"
+VERSION_APP = "v9.1"
 
 # ---- Video de YouTube: peguen acá el link cuando lo suban (por ejemplo "https://youtu.be/XXXXXXXX"). Vacío = no se muestra.
 VIDEO_URL = "https://www.youtube.com/watch?v=7s7YxCgTaYg"
@@ -330,7 +330,8 @@ def mostrar_video(alto=420):
 LUPA_JS = r"""
 function instalarLupa() {
   if (window.__firentLupa) return;
-  const W = 340, H = 240;
+  const W = 360, H = 250;
+  let apagadaLocal = false, mx = -1, my = -1, sucio = true, ultima = 0;
   const lente = document.createElement("div");
   lente.id = "firent-lupa"; lente.setAttribute("aria-hidden", "true");
   lente.style.cssText = "position:fixed;left:0;top:0;width:" + W + "px;height:" + H + "px;overflow:hidden;" +
@@ -340,18 +341,37 @@ function instalarLupa() {
   interior.style.cssText = "position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none";
   lente.appendChild(interior);
   document.body.appendChild(lente);
-  let sucio = true, ultima = 0, mx = -1, my = -1;
+  // Cartel fijo con las instrucciones y un botón para apagarla
+  const aviso = document.createElement("div");
+  aviso.id = "firent-lupa-aviso"; aviso.setAttribute("role", "status");
+  aviso.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:2147483646;display:none;max-width:360px;" +
+    "background:#0B1F33;color:#fff;font:600 15px/1.35 Archivo,system-ui,sans-serif;padding:10px 12px;border-radius:10px;" +
+    "box-shadow:0 6px 20px rgba(0,0,0,.35);border:2px solid #0050FF";
+  const texto = document.createElement("div");
+  const boton = document.createElement("button");
+  boton.style.cssText = "margin-top:8px;font:700 15px Archivo,system-ui,sans-serif;padding:6px 12px;border-radius:7px;" +
+    "border:0;background:#fff;color:#0B1F33;cursor:pointer";
+  aviso.appendChild(texto); aviso.appendChild(boton);
+  document.body.appendChild(aviso);
+  boton.addEventListener("click", function () { apagadaLocal = !apagadaLocal; mover(); });
   const SCROLL = ['[data-testid="stMain"]', '[data-testid="stSidebarContent"]', '[data-testid="stAppViewContainer"]'];
   new MutationObserver(function (ms) {
-    for (const m of ms) { if (!lente.contains(m.target)) { sucio = true; return; } }
+    for (const m of ms) { if (!lente.contains(m.target) && !aviso.contains(m.target)) { sucio = true; return; } }
   }).observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true});
   function foto() {
-    const app = document.querySelector('[data-testid="stApp"]');
-    if (!app) return;
-    const c = app.cloneNode(true);
-    c.querySelectorAll("iframe").forEach(function (f) { f.removeAttribute("src"); f.removeAttribute("srcdoc"); f.style.background = "#E3E8EC"; });
-    c.querySelectorAll("[id]").forEach(function (e) { e.removeAttribute("id"); });
-    interior.replaceChildren(c);
+    // Se copia toda la página, incluidos los carteles y menús que se abren por encima (popovers, listas, ventanas)
+    const envoltura = document.createElement("div");
+    envoltura.style.cssText = "position:relative;width:100%;height:100%";
+    for (const hijo of Array.from(document.body.children)) {
+      if (hijo === lente || hijo === aviso || hijo.tagName === "SCRIPT" || hijo.tagName === "NOSCRIPT") continue;
+      const c = hijo.cloneNode(true);
+      c.querySelectorAll("iframe").forEach(function (f) { f.removeAttribute("src"); f.removeAttribute("srcdoc"); f.style.background = "#E3E8EC"; });
+      c.querySelectorAll("script").forEach(function (e) { e.remove(); });
+      if (c.removeAttribute) c.removeAttribute("id");
+      c.querySelectorAll("[id]").forEach(function (e) { e.removeAttribute("id"); });
+      envoltura.appendChild(c);
+    }
+    interior.replaceChildren(envoltura);
     interior.style.width = innerWidth + "px"; interior.style.height = innerHeight + "px";
     SCROLL.forEach(function (q) {
       const o = document.querySelectorAll(q), k = interior.querySelectorAll(q);
@@ -361,8 +381,12 @@ function instalarLupa() {
   }
   function mover() {
     const cfg = window.__firentLupaCfg || {};
-    if (!cfg.on || mx < 0) { lente.style.display = "none"; return; }
-    if (sucio && Date.now() - ultima > 300) foto();
+    const t = cfg.txt || {};
+    aviso.style.display = cfg.on ? "block" : "none";
+    texto.textContent = apagadaLocal ? t.apagada : (t.prendida || "").replace("{z}", cfg.zoom);
+    boton.textContent = apagadaLocal ? t.prender : t.apagar;
+    if (!cfg.on || apagadaLocal || mx < 0) { lente.style.display = "none"; return; }
+    if (sucio && Date.now() - ultima > 250) foto();
     const z = cfg.zoom || 3;
     lente.style.display = "block";
     lente.style.left = (mx - W / 2) + "px"; lente.style.top = (my - H / 2) + "px";
@@ -375,23 +399,45 @@ function instalarLupa() {
     const r = e.relatedTarget;
     if (!r || r.tagName === "IFRAME") { mx = -1; mover(); }      // sobre un video o un mapa la lupa se oculta
   }, true);
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { mx = -1; mover(); } });
-  window.__firentLupa = {aplicar: mover};
+  document.addEventListener("keydown", function (e) {
+    const cfg = window.__firentLupaCfg || {};
+    if (!cfg.on) return;
+    if (e.altKey && e.code === "KeyL") { apagadaLocal = !apagadaLocal; e.preventDefault(); mover(); }
+    else if (e.altKey && (e.key === "+" || e.code === "Equal" || e.code === "NumpadAdd")) {
+      cfg.zoom = Math.min(6, (cfg.zoom || 3) + 1); e.preventDefault(); mover(); }
+    else if (e.altKey && (e.key === "-" || e.code === "Minus" || e.code === "NumpadSubtract")) {
+      cfg.zoom = Math.max(2, (cfg.zoom || 3) - 1); e.preventDefault(); mover(); }
+    else if (e.key === "Escape") { mx = -1; mover(); }
+  }, true);
+  window.__firentLupa = {aplicar: function (reiniciar) { if (reiniciar) apagadaLocal = false; sucio = true; mover(); }};
 }
 """
 
 
 def inyectar_lupa(activa, zoom):
     "Lupa que sigue al cursor. Se instala una sola vez en la página y se prende o apaga desde el 👁️."
+    textos = {
+        "prendida": tr("🔍 Lupa prendida ({z}×). Atajos: Alt + L la apaga o prende · Alt + / Alt − cambian el aumento · "
+                       "Esc la oculta. Para sacarla del todo: botón 👁️, arriba a la derecha.",
+                       "🔍 Magnifier on ({z}×). Shortcuts: Alt + L turns it off or on · Alt + / Alt − change the zoom · "
+                       "Esc hides it. To remove it for good: 👁️ button, top right.",
+                       pt="🔍 Lupa ligada ({z}×). Atalhos: Alt + L desliga ou liga · Alt + / Alt − mudam o aumento · "
+                          "Esc a esconde. Para tirá-la de vez: botão 👁️, no canto superior direito."),
+        "apagada": tr("🔍 Lupa apagada. Alt + L o el botón la vuelven a prender.",
+                      "🔍 Magnifier off. Alt + L or the button turns it back on.",
+                      pt="🔍 Lupa desligada. Alt + L ou o botão a ligam de novo."),
+        "apagar": tr("Apagar la lupa", "Turn off magnifier", pt="Desligar a lupa"),
+        "prender": tr("Prender la lupa", "Turn on magnifier", pt="Ligar a lupa"),
+    }
     html = f"""<script>
 const P = window.parent, D = P.document;
-P.__firentLupaCfg = {{on: {str(activa).lower()}, zoom: {int(zoom)}}};
+P.__firentLupaCfg = {{on: {str(activa).lower()}, zoom: {int(zoom)}, txt: {json.dumps(textos, ensure_ascii=False)}}};
 if (!P.__firentLupa) {{
   const s = D.createElement("script");
   s.textContent = {json.dumps(LUPA_JS)} + ";instalarLupa();";
   D.head.appendChild(s);
 }}
-if (P.__firentLupa) P.__firentLupa.aplicar();
+if (P.__firentLupa) P.__firentLupa.aplicar(true);
 </script>"""
     if hasattr(st, "iframe"):
         st.iframe(html, height=1)
@@ -711,10 +757,14 @@ with cab2:
                       "rely on color, and shows a text description under each chart.", pt="Cores para daltonismo: troca as cores por paletas adequadas para daltonismo, acrescenta marcas e números que não dependem da cor e mostra uma descrição em texto abaixo de cada gráfico."))
         st.toggle(tr("Lupa: agranda lo que está debajo del cursor", "Magnifier: enlarges what is under the cursor",
                      pt="Lupa: amplia o que está embaixo do cursor"), key="lupa")
+        st.caption(tr("Con la lupa prendida: Alt + L la apaga o prende al instante, Alt + y Alt − cambian el aumento y Esc la "
+                      "oculta hasta que muevas el mouse. Abajo a la derecha aparece un cartel con estos atajos y un botón.",
+                      "With the magnifier on: Alt + L turns it off or on instantly, Alt + and Alt − change the zoom, and Esc "
+                      "hides it until you move the mouse. A box with these shortcuts and a button appears at the bottom right.",
+                      pt="Com a lupa ligada: Alt + L desliga ou liga na hora, Alt + e Alt − mudam o aumento e Esc a esconde até "
+                         "você mover o mouse. No canto inferior direito aparece um aviso com esses atalhos e um botão."))
         if st.session_state.get("lupa"):
-            if "lupa_zoom" not in st.session_state:
-                st.session_state.lupa_zoom = 3
-            st.select_slider(tr("Aumento de la lupa", "Magnifier zoom", pt="Aumento da lupa"), [2, 3, 4, 5],
+            st.select_slider(tr("Aumento de la lupa", "Magnifier zoom", pt="Aumento da lupa"), [2, 3, 4, 5], value=3,
                              key="lupa_zoom", format_func=lambda z: f"{z}×")
         if st.button(tr("Volver a ver la bienvenida", "Show the welcome again", pt="Ver a boas-vindas de novo"), width="stretch"):
             st.session_state.bienvenida_hecha, st.session_state.paso_bv = False, 0

@@ -10,6 +10,8 @@ any date range, compare it with the historical median and download the hotspots 
 - **Live web app:** [add the Streamlit link here]
 - **Languages:** English, Spanish, Portuguese and a basic Guaraní prototype (selector at the top of the left panel).
 - **Anomaly levels without normality assumptions:** each month is flagged as *anomalous* (above 90% of reference years) or *record* (above all of them). We use percentiles instead of Z-scores because fire data are strongly skewed (82% of region-month combinations have skewness > 1), so a single extreme year would inflate the standard deviation and hide later events.
+- **Early warning (traffic light):** at the top of the page, the harmonized hotspots of the last 7, 15 or 30 days of data are compared with the same date window in every reference year: *usual*, *elevated* (above the 75th percentile) or *exceptional* (above the 90th percentile).
+- **Critical periods (current season):** a cumulative curve of this season's harmonized hotspots against the 10–90% band of reference seasons, the median season and the record season, with the season's pace in days ahead of or behind the median. The season can start in January or in July (for areas such as Andean Patagonia).
 - **Featured cases:** one-click buttons load well-known events (Paraná Delta 2020, Corrientes 2022, Córdoba Hills 2020) and a low-fire year (2026); a mini-map in the sidebar shows where the selected area is and where it burned that year.
 - **Inclusion:** on arrival the app asks for the language and offers larger text with high contrast and colorblind-safe colors
   (changeable with the 👁️ button), plus an on-screen magnifier that follows the cursor; the summary can be read aloud; a presentation video opens after the welcome and can be closed; every view can be shared with a link; and anyone can leave a
@@ -18,7 +20,7 @@ any date range, compare it with the historical median and download the hotspots 
 ## The problem
 
 VIIRS has 375 m pixels; MODIS has ~1 km pixels. VIIRS splits each fire into more pixels and detects smaller fires, so it records
-about **3.3 times more hotspots** than MODIS. Stitching both records together creates a false jump in fire activity in 2012. As
+about **3.4 times more hotspots** than MODIS. Stitching both records together creates a false jump in fire activity in 2012. As
 MODIS reaches the end of its life, ~10 years of fire history would become incomparable without harmonization.
 
 ## How it works
@@ -41,7 +43,7 @@ MODIS reaches the end of its life, ~10 years of fire history would become incomp
    counts the **log regression by region and month** won (bias −3.5%, worst year 13.5%); the fixed regional factor was 5.6%
    worse, a difference that is not statistically significant, so the series does not depend on the method. Quantile mapping
    won for fire-days and log regression for FRP. Random Forest did not justify its complexity. VIIRS records ≈ 3.4 times more
-   hotspots than MODIS, from 3.1 in Gran Chaco to 4.6 in the Paraná Delta.
+   hotspots than MODIS, from 3.1 in Gran Chaco to 4.7 in the Paraná Delta.
 7. **Validation:** the three measures flag the same exceptional years (2020, 2003, 2008), correlation 0.92–0.98.
 
 The full methodology is in the app's **"How we built it"** tab.
@@ -79,9 +81,13 @@ Code and texts in this repository were developed with the help of an AI assistan
 write and debug the Python code (notebook and web app), discuss harmonization methods, and draft and translate texts
 (including the Portuguese version and the basic Guaraní prototype, which is flagged in the app as under review). Every code
 cell of the notebook and the notebook metadata state this. All results
-are computed from the real NASA FIRMS data, and the team reviewed the methods, decisions and outputs. No AI-generated images,
-audio or video are included.
+are computed from the real NASA FIRMS data, and the team reviewed the methods, decisions and outputs. No AI-generated audio or video is included.
 
-## Team
+## Team FIREN'T
 
-[Team members' names]
+- Denise Behar (team owner)
+- Ximena Vanessa Irazabal
+- Ian Lionel Tapias Díaz
+- Melani Janet Pedraza
+- Male Salinas
+- Aldo Mora

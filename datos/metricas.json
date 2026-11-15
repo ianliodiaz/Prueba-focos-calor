@@ -58,10 +58,10 @@
       },
       {
         "método": "Random Forest",
-        "MAE": 413.8553557102185,
+        "MAE": 413.85535571021876,
         "R² (log)": 0.9760735850856249,
-        "Sesgo total %": -3.2619673987323794,
-        "Peor año (país) %": 13.226963381147971
+        "Sesgo total %": -3.261967398732357,
+        "Peor año (país) %": 13.226963381147927
       }
     ],
     "dias": [
@@ -88,10 +88,10 @@
       },
       {
         "método": "Random Forest",
-        "MAE": 62.32673059130257,
+        "MAE": 62.32673059130247,
         "R² (log)": 0.9787983744423306,
-        "Sesgo total %": 1.938054976438175,
-        "Peor año (país) %": 4.093298149489999
+        "Sesgo total %": 1.9380549764381527,
+        "Peor año (país) %": 4.0932981494899545
       }
     ],
     "frp": [
@@ -118,10 +118,10 @@
       },
       {
         "método": "Random Forest",
-        "MAE": 4752.644765814766,
+        "MAE": 4752.644765814762,
         "R² (log)": 0.9487877164633266,
-        "Sesgo total %": -2.99868536459994,
-        "Peor año (país) %": 11.436953836064967
+        "Sesgo total %": -2.998685364599918,
+        "Peor año (país) %": 11.436953836064944
       }
     ]
   },
@@ -264,10 +264,10 @@
         145376.66642817514
       ],
       "Random Forest": [
-        250232.52385360264,
-        151511.27044282318,
+        250232.52385360276,
+        151511.2704428232,
         154069.14939959327,
-        150316.26676658596
+        150316.26676658602
       ]
     },
     "dias": {
@@ -302,10 +302,10 @@
         40911.53338618799
       ],
       "Random Forest": [
-        51555.493375299426,
+        51555.49337529942,
         38412.144361201834,
-        40290.61266280645,
-        41187.6362117902
+        40290.612662806445,
+        41187.63621179018
       ]
     },
     "frp": {
@@ -340,7 +340,7 @@
         1612966.612586207
       ],
       "Random Forest": [
-        3130254.6661254726,
+        3130254.6661254736,
         1884203.088080417,
         1697900.3746046845,
         1650238.332256943
@@ -562,6 +562,7 @@
       "leidos": 1635202,
       "otro_satelite": 0,
       "fuera_argentina": 0,
+      "hora_ausente": 0,
       "valores_imposibles": 0,
       "fuente_fija": 72774,
       "baja_confianza": 66829,
@@ -574,6 +575,7 @@
       "leidos": 1827314,
       "otro_satelite": 0,
       "fuera_argentina": 0,
+      "hora_ausente": 0,
       "valores_imposibles": 0,
       "fuente_fija": 62289,
       "baja_confianza": 165578,
@@ -586,6 +588,7 @@
       "leidos": 2976537,
       "otro_satelite": 0,
       "fuera_argentina": 0,
+      "hora_ausente": 0,
       "valores_imposibles": 0,
       "fuente_fija": 95128,
       "baja_confianza": 255589,
@@ -594,5 +597,81 @@
       "usados": 2625818
     }
   ],
-  "archivos_con_problemas": []
+  "archivos_con_problemas": [],
+  "versiones": {
+    "python": "3.13.18",
+    "pandas": "3.0.5",
+    "numpy": "2.5.3",
+    "scikit-learn": "1.9.1",
+    "pyarrow": "26.0.1"
+  },
+  "inventario": [
+    {
+      "archivo": "fire_archive_M-C61_841680.csv",
+      "satélite": "Aqua, Terra",
+      "fuente": "modis",
+      "nrt": false,
+      "desde": "2003-01-01",
+      "hasta": "2026-08-31",
+      "filas": 1626873,
+      "MB": 130.8,
+      "columnas que faltan": "—"
+    },
+    {
+      "archivo": "fire_nrt_M-C61_841680.csv",
+      "satélite": "Aqua, Terra",
+      "fuente": "modis",
+      "nrt": true,
+      "desde": "2026-09-01",
+      "hasta": "2026-10-28",
+      "filas": 8329,
+      "MB": 0.7,
+      "columnas que faltan": "type"
+    },
+    {
+      "archivo": "fire_archive_J1V-C2_849867.csv",
+      "satélite": "NOAA-20",
+      "fuente": "n20",
+      "nrt": false,
+      "desde": "2018-04-01",
+      "hasta": "2026-07-31",
+      "filas": 1780438,
+      "MB": 146.5,
+      "columnas que faltan": "—"
+    },
+    {
+      "archivo": "fire_nrt_J1V-C2_849867.csv",
+      "satélite": "NOAA-20",
+      "fuente": "n20",
+      "nrt": true,
+      "desde": "2026-08-01",
+      "hasta": "2026-11-14",
+      "filas": 46876,
+      "MB": 4.0,
+      "columnas que faltan": "type"
+    },
+    {
+      "archivo": "fire_archive_SV-C2_841681.csv",
+      "satélite": "S-NPP",
+      "fuente": "viirs",
+      "nrt": false,
+      "desde": "2012-01-20",
+      "hasta": "2026-07-31",
+      "filas": 2936368,
+      "MB": 241.5,
+      "columnas que faltan": "—"
+    },
+    {
+      "archivo": "fire_nrt_SV-C2_841681.csv",
+      "satélite": "S-NPP",
+      "fuente": "viirs",
+      "nrt": true,
+      "desde": "2026-08-01",
+      "hasta": "2026-10-28",
+      "filas": 40169,
+      "MB": 3.4,
+      "columnas que faltan": "type"
+    }
+  ],
+  "dias_sin_rellenar": 0
 }

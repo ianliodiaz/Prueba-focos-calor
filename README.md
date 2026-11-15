@@ -10,7 +10,7 @@ any date range, compare it with the historical median and download the hotspots 
 - **Live web app:** [add the Streamlit link here]
 - **Languages:** English, Spanish, Portuguese and a basic Guaraní prototype (selector at the top of the left panel).
 - **Inclusion:** on arrival the app asks for the language and offers larger text with high contrast and colorblind-safe colors
-  (changeable with the 👁️ button); the summary can be read aloud; every view can be shared with a link; and anyone can leave a
+  (changeable with the 👁️ button), plus an on-screen magnifier that follows the cursor; the summary can be read aloud; a presentation video opens after the welcome and can be closed; every view can be shared with a link; and anyone can leave a
   comment or report odd data through a moderated form.
 
 ## The problem

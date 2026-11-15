@@ -20,10 +20,10 @@ from folium.plugins import Draw
 from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 
-VERSION_APP = "v8.1"
+VERSION_APP = "v9"
 
 # ---- Video de YouTube: peguen acá el link cuando lo suban (por ejemplo "https://youtu.be/XXXXXXXX"). Vacío = no se muestra.
-VIDEO_URL = ""
+VIDEO_URL = "https://www.youtube.com/watch?v=7s7YxCgTaYg"
 # ---- Comentarios: formulario de Google (link prellenado) y planilla publicada con los comentarios aprobados
 FORM_URL = ("https://docs.google.com/forms/d/e/1FAIpQLSeXcpDScTTaLzCYbw7vCMWxWpWZGVu9SXVJoxgt4RP_XLK7tw/viewform"
             "?usp=pp_url&entry.1762721848=")
@@ -65,6 +65,7 @@ if "_params_ok" not in st.session_state:
             st.session_state.ref_val = (r0, r1)
         st.session_state.acc = qp.get("acc") == "1"
         st.session_state.grande = qp.get("grande") == "1"
+        st.session_state.lupa = qp.get("lupa") == "1"
         if any(k in qp for k in ("lang", "zona", "anio")):
             st.session_state.bienvenida_hecha = True      # quien abre un link compartido no ve la bienvenida
     except (ValueError, KeyError):
@@ -183,9 +184,11 @@ html, body, [class*="css"], .stMarkdown, .stText, button, input, select, textare
 [data-testid="stSidebar"] * {{ color: #DCE4E9 !important; }}
 [data-testid="stSidebar"] [data-baseweb="select"] *, [data-testid="stSidebar"] input {{ color: {TINTA} !important; }}
 [data-testid="stSidebar"] hr {{ border-color: #2E4252; }}
-[data-testid="stSidebar"] [data-testid="stPopover"] button, [data-testid="stSidebar"] [data-testid="stLinkButton"] a {{
+[data-testid="stSidebar"] [data-testid="stPopover"] button, [data-testid="stSidebar"] [data-testid="stLinkButton"] a,
+[data-testid="stSidebar"] [data-testid="stButton"] button {{
   background: #24394A !important; border: 1px solid #5B7385 !important; }}
-[data-testid="stSidebar"] [data-testid="stPopover"] button:hover, [data-testid="stSidebar"] [data-testid="stLinkButton"] a:hover {{
+[data-testid="stSidebar"] [data-testid="stPopover"] button:hover, [data-testid="stSidebar"] [data-testid="stLinkButton"] a:hover,
+[data-testid="stSidebar"] [data-testid="stButton"] button:hover {{
   border-color: {BRASA} !important; }}
 [data-testid="stSidebar"] [data-testid="stAlert"] * {{ color: {TINTA} !important; }}
 .block-container {{ padding-top: 3.4rem; max-width: 1320px; }}
@@ -275,11 +278,11 @@ def bienvenida():
                        "You can change it anytime with the 👁️ button, top right.", pt="Você pode mudar isso quando quiser com o botão 👁️, no canto superior direito."))
         if st.button("🔍 " + tr("Sí, letra grande", "Yes, larger text", pt="Sim, letra grande", gn="Heẽ (Sí), letra grande"),
                      key="bv_grande_si", type="primary", width="stretch"):
-            st.session_state.grande, st.session_state.paso_bv = True, 2
+            st.session_state.grande, st.session_state.lupa, st.session_state.paso_bv = True, True, 2
             st.rerun()
         if st.button(tr("No, tamaño estándar", "No, standard size", pt="Não, tamanho padrão", gn="Nahániri (No), tamaño estándar"),
                      key="bv_grande_no", width="stretch"):
-            st.session_state.grande, st.session_state.paso_bv = False, 2
+            st.session_state.grande, st.session_state.lupa, st.session_state.paso_bv = False, False, 2
             st.rerun()
     else:
         st.markdown("### " + tr("¿Te cuesta distinguir algunos colores, como el rojo y el verde?",
@@ -302,6 +305,98 @@ def bienvenida():
 
 if not st.session_state.get("bienvenida_hecha"):
     bienvenida()
+
+
+def _id_youtube(url):
+    import re
+    m = re.search(r"(?:v=|youtu\.be/|embed/|shorts/)([\w-]{11})", url or "")
+    return m.group(1) if m else None
+
+
+VIDEO_ID = _id_youtube(VIDEO_URL)
+SUBT = {"ES": "es", "EN": "en", "PT": "pt", "GN": "gn"}
+
+
+def mostrar_video(alto=420):
+    "Video de YouTube con los subtítulos en el idioma elegido en la página (si el video los tiene)."
+    l_ = SUBT[IDIOMA]
+    url = (f"https://www.youtube-nocookie.com/embed/{VIDEO_ID}?rel=0&cc_load_policy=1&cc_lang_pref={l_}&hl={l_}")
+    if hasattr(st, "iframe"):
+        st.iframe(url, height=alto)
+    else:
+        components.iframe(url, height=alto)
+
+
+LUPA_JS = r"""
+function instalarLupa() {
+  if (window.__firentLupa) return;
+  const W = 340, H = 240;
+  const lente = document.createElement("div");
+  lente.id = "firent-lupa"; lente.setAttribute("aria-hidden", "true");
+  lente.style.cssText = "position:fixed;left:0;top:0;width:" + W + "px;height:" + H + "px;overflow:hidden;" +
+    "pointer-events:none;z-index:2147483647;display:none;background:#fff;border:4px solid #0050FF;" +
+    "border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45)";
+  const interior = document.createElement("div");
+  interior.style.cssText = "position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none";
+  lente.appendChild(interior);
+  document.body.appendChild(lente);
+  let sucio = true, ultima = 0, mx = -1, my = -1;
+  const SCROLL = ['[data-testid="stMain"]', '[data-testid="stSidebarContent"]', '[data-testid="stAppViewContainer"]'];
+  new MutationObserver(function (ms) {
+    for (const m of ms) { if (!lente.contains(m.target)) { sucio = true; return; } }
+  }).observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true});
+  function foto() {
+    const app = document.querySelector('[data-testid="stApp"]');
+    if (!app) return;
+    const c = app.cloneNode(true);
+    c.querySelectorAll("iframe").forEach(function (f) { f.removeAttribute("src"); f.removeAttribute("srcdoc"); f.style.background = "#E3E8EC"; });
+    c.querySelectorAll("[id]").forEach(function (e) { e.removeAttribute("id"); });
+    interior.replaceChildren(c);
+    interior.style.width = innerWidth + "px"; interior.style.height = innerHeight + "px";
+    SCROLL.forEach(function (q) {
+      const o = document.querySelectorAll(q), k = interior.querySelectorAll(q);
+      o.forEach(function (e, i) { if (k[i]) { k[i].scrollTop = e.scrollTop; k[i].scrollLeft = e.scrollLeft; } });
+    });
+    sucio = false; ultima = Date.now();
+  }
+  function mover() {
+    const cfg = window.__firentLupaCfg || {};
+    if (!cfg.on || mx < 0) { lente.style.display = "none"; return; }
+    if (sucio && Date.now() - ultima > 300) foto();
+    const z = cfg.zoom || 3;
+    lente.style.display = "block";
+    lente.style.left = (mx - W / 2) + "px"; lente.style.top = (my - H / 2) + "px";
+    interior.style.transform = "translate(" + (W / 2 - mx * z) + "px," + (H / 2 - my * z) + "px) scale(" + z + ")";
+  }
+  document.addEventListener("mousemove", function (e) { mx = e.clientX; my = e.clientY; mover(); }, true);
+  document.addEventListener("scroll", function () { sucio = true; ultima = 0; mover(); }, true);
+  document.documentElement.addEventListener("mouseleave", function () { mx = -1; mover(); });
+  document.addEventListener("mouseout", function (e) {
+    const r = e.relatedTarget;
+    if (!r || r.tagName === "IFRAME") { mx = -1; mover(); }      // sobre un video o un mapa la lupa se oculta
+  }, true);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { mx = -1; mover(); } });
+  window.__firentLupa = {aplicar: mover};
+}
+"""
+
+
+def inyectar_lupa(activa, zoom):
+    "Lupa que sigue al cursor. Se instala una sola vez en la página y se prende o apaga desde el 👁️."
+    html = f"""<script>
+const P = window.parent, D = P.document;
+P.__firentLupaCfg = {{on: {str(activa).lower()}, zoom: {int(zoom)}}};
+if (!P.__firentLupa) {{
+  const s = D.createElement("script");
+  s.textContent = {json.dumps(LUPA_JS)} + ";instalarLupa();";
+  D.head.appendChild(s);
+}}
+if (P.__firentLupa) P.__firentLupa.aplicar();
+</script>"""
+    if hasattr(st, "iframe"):
+        st.iframe(html, height=1)
+    else:
+        components.html(html, height=0)
 
 
 def boton_voz(texto, etiqueta):
@@ -367,6 +462,7 @@ if faltan:
 serie, grilla, REGIONES, MET, HUECOS = cargar()
 HUECOS_VIIRS = HUECOS[HUECOS.satelite == "VIIRS S-NPP"]
 DIAS_HUECO_VIIRS = set(pd.to_datetime(HUECOS_VIIRS.fecha))
+DIAS_RELLENO_MODIS = pd.to_datetime(HUECOS_VIIRS[HUECOS_VIIRS.relleno_con == "MODIS convertido"].fecha)
 FECHAS_SENSOR = MET.get("fechas_sensor", {})
 focos = cargar_focos()
 FECHA_FIN = pd.Timestamp(MET["fecha_fin"])
@@ -402,6 +498,9 @@ def conteo_diario(region, bbox, k):
         if s not in d:
             d[s] = 0
     d["equiv"] = np.where(d.index >= INICIO_VIIRS, d.VIIRS, d.MODIS * k)
+    # Días sin dato de S-NPP en que tampoco había NOAA-20: se completan con MODIS convertido, igual que en la serie
+    con_modis = d.index.isin(DIAS_RELLENO_MODIS)
+    d.loc[con_modis, "equiv"] = d.MODIS[con_modis] * k
     return d
 
 
@@ -536,6 +635,8 @@ if st.session_state.get("acc"):
     params["acc"] = "1"
 if GRANDE:
     params["grande"] = "1"
+if st.session_state.get("lupa"):
+    params["lupa"] = "1"
 st.query_params.from_dict(params)
 try:
     BASE_URL = (st.context.url or "").split("?")[0]
@@ -552,6 +653,11 @@ with st.sidebar.popover("🔗 " + tr("Compartir esta vista", "Share this view", 
     st.code(URL_COMPARTIR, language=None, wrap_lines=True)
 contexto_form = (f"zona: {region if region != AREA else 'area ' + params['area']}; año: {anio}; medida: {medida}; "
                  f"idioma: {IDIOMA}; link: {URL_COMPARTIR}")
+if VIDEO_ID:
+    def _abrir_video():
+        st.session_state.video_cerrado = False
+    st.sidebar.button("▶ " + tr("Video de presentación", "Presentation video", pt="Vídeo de apresentação"),
+                      on_click=_abrir_video, width="stretch", key="abrir_video")
 st.sidebar.link_button("💬 " + tr("Comentar o reportar un dato raro", "Comment or report odd data", pt="Comentar ou relatar um dado estranho"),
                        FORM_URL + urllib.parse.quote(contexto_form), width="stretch")
 st.sidebar.divider()
@@ -603,10 +709,18 @@ with cab2:
                       "que no dependen del color, y muestra una descripción en texto debajo de cada gráfico.",
                       "Colorblind-safe colors: switches to colorblind-safe palettes, adds markers and numbers that do not "
                       "rely on color, and shows a text description under each chart.", pt="Cores para daltonismo: troca as cores por paletas adequadas para daltonismo, acrescenta marcas e números que não dependem da cor e mostra uma descrição em texto abaixo de cada gráfico."))
+        st.toggle(tr("Lupa: agranda lo que está debajo del cursor", "Magnifier: enlarges what is under the cursor",
+                     pt="Lupa: amplia o que está embaixo do cursor"), key="lupa")
+        if st.session_state.get("lupa"):
+            if "lupa_zoom" not in st.session_state:
+                st.session_state.lupa_zoom = 3
+            st.select_slider(tr("Aumento de la lupa", "Magnifier zoom", pt="Aumento da lupa"), [2, 3, 4, 5],
+                             key="lupa_zoom", format_func=lambda z: f"{z}×")
         if st.button(tr("Volver a ver la bienvenida", "Show the welcome again", pt="Ver a boas-vindas de novo"), width="stretch"):
             st.session_state.bienvenida_hecha, st.session_state.paso_bv = False, 0
             st.rerun()
 ACC = st.session_state.get("acc", False)
+inyectar_lupa(bool(st.session_state.get("lupa")), st.session_state.get("lupa_zoom", 3))
 
 if ACC:
     SEQ, DIV = "Cividis", "PuOr_r"
@@ -649,6 +763,21 @@ with cab1:
         st.title(zona_txt(region))
         st.markdown(f"<p class='zona-sub'>{NOMBRE_MEDIDA[medida]} · {tr('mediana de', 'median of', pt='mediana de')} "
                     f"{ref_desde}–{ref_hasta}</p>", unsafe_allow_html=True)
+
+# ---- Video de presentación: aparece después de la bienvenida y se puede cerrar con la cruz
+if VIDEO_ID and not st.session_state.get("video_cerrado") and st.session_state.get("bienvenida_hecha"):
+    with st.container(border=True):
+        t1_, t2_ = st.columns([12, 1])
+        t1_.markdown("**▶ " + tr("Video de presentación", "Presentation video", pt="Vídeo de apresentação") + "**")
+        if t2_.button("✕", key="cerrar_video", help=tr("Cerrar el video", "Close the video", pt="Fechar o vídeo")):
+            st.session_state.video_cerrado = True
+            st.rerun()
+        _, vc_, _ = st.columns([1, 6, 1])
+        with vc_:
+            mostrar_video(alto=420 if not GRANDE else 480)
+        st.caption(tr("Podés volver a verlo desde el botón «▶ Video de presentación» de la barra lateral.",
+                      "You can watch it again from the «▶ Presentation video» button in the sidebar.",
+                      pt="Você pode vê-lo de novo pelo botão «▶ Vídeo de apresentação» da barra lateral."))
 
 if region == AREA and n_focos_area == 0:
     st.warning(tr("No hay focos registrados en esta área. Probá con un área más grande o en otra zona.",
@@ -704,6 +833,11 @@ notas = []
 if len(con_dato) < 12:
     notas.append(tr(f"{anio} tiene datos hasta {MESES_LARGOS[int(con_dato.max()) - 1]}: se compara solo con esos meses.",
                     f"{anio} has data up to {MESES_LARGOS[int(con_dato.max()) - 1]}: only those months are compared.", pt=f"{anio} tem dados até {MESES_LARGOS[int(con_dato.max()) - 1]}: compara-se só com esses meses."))
+if anio == FECHA_FIN.year and FECHA_FIN.day < FECHA_FIN.days_in_month:
+    mes_fin = MESES_LARGOS[FECHA_FIN.month - 1]
+    notas.append(tr(f"{mes_fin.capitalize()} está incompleto (datos hasta el día {FECHA_FIN.day}): sus valores van a subir.",
+                    f"{mes_fin.capitalize()} is incomplete (data up to day {FECHA_FIN.day}): its values will rise.",
+                    pt=f"{mes_fin.capitalize()} está incompleto (dados até o dia {FECHA_FIN.day}): seus valores vão subir."))
 if region == AREA:
     notas.append(tr(f"Área con {miles(n_focos_area)} focos. Factor MODIS→VIIRS: {K_ZONA:.2f}, {origen_k_txt}.",
                     f"Area with {miles(n_focos_area)} hotspots. MODIS→VIIRS factor: {K_ZONA:.2f}, {origen_k_txt}.", pt=f"Área com {miles(n_focos_area)} focos. Fator MODIS→VIIRS: {K_ZONA:.2f}, {origen_k_txt}."))
@@ -716,13 +850,7 @@ resumen_voz = (f"{nombre_zona}. " + frase_estado.replace("<b>", "").replace("</b
                + tr(f"Lo habitual para esos meses es {miles(esperado)}.", f"The usual for those months is {miles(esperado)}.", pt=f"O habitual para esses meses é {miles(esperado)}.")
                + (" " + tr(f"El mes con más actividad fue {MESES_LARGOS[pico - 1]}.",
                            f"The most active month was {MESES_LARGOS[pico - 1]}.", pt=f"O mês com mais atividade foi {MESES_LARGOS[pico - 1]}.") if pico else ""))
-v1_, v2_ = st.columns([1, 3]) if VIDEO_URL else (st.container(), None)
-with v1_:
-    boton_voz(resumen_voz, tr("Escuchar el resumen", "Listen to the summary", pt="Ouvir o resumo"))
-if VIDEO_URL:
-    with v2_:
-        with st.popover("▶ " + tr("Ver el video del proyecto", "Watch the project video", pt="Ver o vídeo do projeto")):
-            st.video(VIDEO_URL)
+boton_voz(resumen_voz, tr("Escuchar el resumen", "Listen to the summary", pt="Ouvir o resumo"))
 
 tabs = st.tabs([tr("Comparación con lo habitual", "Compared with usual", pt="Comparação com o habitual"), tr("Calendario", "Calendar", pt="Calendário"),
                 tr("Búsqueda por fechas", "Date search", pt="Busca por datas"), tr("Mapa", "Map", pt="Mapa"), tr("Armonización", "Harmonization", pt="Harmonização"),
@@ -1035,10 +1163,10 @@ with tabs[2]:
             n_rell = int(dd.relleno.sum())
             if n_rell:
                 st.markdown(f"<p class='nota'>" + tr(
-                    f"Barras cuadriculadas: {n_rell} días en que el satélite VIIRS S-NPP no midió. Esos días se muestran "
-                    "los focos del satélite VIIRS NOAA-20, que lleva el mismo instrumento.",
-                    f"Cross-hatched bars: {n_rell} days when the VIIRS S-NPP satellite did not measure. On those days the "
-                    "page shows hotspots from the VIIRS NOAA-20 satellite, which carries the same instrument.", pt=f"Barras quadriculadas: {n_rell} dias em que o satélite VIIRS S-NPP não mediu. Nesses dias são mostrados os focos do satélite VIIRS NOAA-20, que leva o mesmo instrumento.") + "</p>",
+                    f"Barras cuadriculadas: {n_rell} días en que el satélite VIIRS S-NPP no midió. Esos días se completan "
+                    "con el satélite VIIRS NOAA-20, que lleva el mismo instrumento (o con MODIS convertido, antes de 2018).",
+                    f"Cross-hatched bars: {n_rell} days when the VIIRS S-NPP satellite did not measure. On those days "
+                    "values are filled with the VIIRS NOAA-20 satellite, which carries the same instrument (or with converted MODIS, before 2018).", pt=f"Barras quadriculadas: {n_rell} dias em que o satélite VIIRS S-NPP não mediu. Nesses dias os valores são completados com o satélite VIIRS NOAA-20, que leva o mesmo instrumento (ou com MODIS convertido, antes de 2018).") + "</p>",
                     unsafe_allow_html=True)
             if len(dd) and dd.equiv.max() > 0:
                 dmax = dd.loc[dd.equiv.idxmax()]
@@ -1406,7 +1534,8 @@ with tabs[6]:
                 "dias_equiv": tr("Días con fuego armonizados", "Harmonized fire-days", pt="Dias com fogo harmonizados"),
                 "frp_modis": "FRP MODIS (MW)", "frp_viirs": "FRP VIIRS (MW)", "frp_equiv": tr("FRP armonizada (MW)", "Harmonized FRP (MW)", pt="FRP harmonizada (MW)"),
                 "focos_relleno": tr("Focos completados (NOAA-20)", "Filled hotspots (NOAA-20)", pt="Focos completados (NOAA-20)"),
-                "dias_sin_dato": tr("Días sin dato de S-NPP", "S-NPP no-data days", pt="Dias sem dado do S-NPP")}
+                "dias_sin_dato": tr("Días sin dato de S-NPP", "S-NPP no-data days", pt="Dias sem dado do S-NPP"),
+                "cobertura": tr("Cobertura del mes (1 = completo)", "Month coverage (1 = complete)", pt="Cobertura do mês (1 = completo)")}
     base = pd.concat([dr, serie], ignore_index=True) if region == AREA else serie
     opciones = ([AREA] if region == AREA else []) + [PAIS] + list(REGIONES) + [RESTO]
     f1, f2, f3 = st.columns([2, 2, 1])
@@ -1459,8 +1588,8 @@ with tabs[7]:
     top3 = lista([str(a) for a in ia.iloc[:, 0].nlargest(3).index])
     peor = res_f.loc[elegido_f, "Peor año (país) %"]
     gano_txt = {m: metodo_txt(MET["elegido"][m]).lower() for m in ("focos", "dias", "frp")}
-    if VIDEO_URL:
-        st.video(VIDEO_URL)
+    if VIDEO_ID:
+        mostrar_video(alto=420)
     if not EN and not PT:
         texto = f"""
 <div class='metodo'>
@@ -1562,7 +1691,7 @@ parecen mucho entre sí (correlación mínima {miles(corr_min, 2)}).
 - **Búsqueda por fechas:** compara cualquier período con el mismo período de todos los años y permite descargar los focos.
 - **Mapas** con capas de fondo (topografía con curvas de nivel, relieve submarino, satélite) y ciudades principales.
 - **Accesibilidad:** al entrar, la página pregunta el idioma y si se prefiere letra grande o colores para daltonismo; todo se
-  cambia con el botón 👁️. El resumen se puede escuchar en voz alta. Hay versión en español, inglés, portugués y un prototipo
+  cambia con el botón 👁️. El resumen se puede escuchar en voz alta y hay una lupa que agranda lo que está debajo del cursor. Hay versión en español, inglés, portugués y un prototipo
   en guaraní.
 - **Compartir y comentar:** el link de la página guarda la vista elegida, y cualquier persona puede dejar un comentario o
   reportar un dato raro.
@@ -1681,7 +1810,7 @@ closely track each other (minimum correlation {corr_min:.2f}).
 - **Date search:** compares any period with the same period in every year and lets you download the hotspots.
 - **Maps** with background layers (topography with contour lines, seafloor relief, satellite) and main cities.
 - **Accessibility:** on arrival, the page asks for the language and whether larger text or colorblind-safe colors are
-  preferred; everything can be changed with the 👁️ button. The summary can be read aloud. The page is available in Spanish,
+  preferred; everything can be changed with the 👁️ button. The summary can be read aloud, and a magnifier enlarges what is under the cursor. The page is available in Spanish,
   English, Portuguese and a Guaraní prototype.
 - **Share and comment:** the page link keeps the chosen view, and anyone can leave a comment or report odd data.
 
@@ -1801,7 +1930,7 @@ muito parecidas entre si (correlação mínima de {miles(corr_min, 2)}).
 - **Busca por datas:** compara qualquer período com o mesmo período de todos os anos e permite baixar os focos.
 - **Mapas** com camadas de fundo (topografia com curvas de nível, relevo submarino, satélite) e cidades principais.
 - **Acessibilidade:** ao entrar, a página pergunta o idioma e se a pessoa prefere letra grande ou cores para daltonismo; tudo
-  pode ser mudado com o botão 👁️. O resumo pode ser ouvido em voz alta. A página está em espanhol, inglês, português e tem um
+  pode ser mudado com o botão 👁️. O resumo pode ser ouvido em voz alta, e uma lupa amplia o que está embaixo do cursor. A página está em espanhol, inglês, português e tem um
   protótipo em guarani.
 - **Compartilhar e comentar:** o link da página guarda a visualização escolhida, e qualquer pessoa pode deixar um comentário
   ou relatar um dado estranho.

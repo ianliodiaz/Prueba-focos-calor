@@ -20,7 +20,7 @@ from folium.plugins import Draw
 from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 
-VERSION_APP = "v9.1"
+VERSION_APP = "v10.2"
 
 # ---- Video de YouTube: peguen acá el link cuando lo suban (por ejemplo "https://youtu.be/XXXXXXXX"). Vacío = no se muestra.
 VIDEO_URL = "https://www.youtube.com/watch?v=7s7YxCgTaYg"
@@ -202,16 +202,30 @@ h1 {{ font-weight: 800; font-size: 2.35rem !important; line-height: 1.08; margin
 [data-testid="stMetric"] {{ border-left: 3px solid {BRASA}; padding: .15rem 0 .15rem .8rem; }}
 [data-testid="stMetricLabel"] p {{ color: {CENIZA} !important; font-size: .9rem; }}
 [data-testid="stMetricValue"] {{ font-stretch: 112%; font-weight: 700; color: {TINTA}; }}
-.stTabs [data-baseweb="tab-list"] {{ gap: 1.4rem; border-bottom: 1px solid #CBD5DB; }}
-.stTabs [data-baseweb="tab"] {{ padding: .5rem 0; font-weight: 600; color: {CENIZA}; }}
-.stTabs [aria-selected="true"] {{ color: {TINTA} !important; }}
-.stTabs [data-baseweb="tab-highlight"] {{ background: {BRASA}; height: 3px; }}
+/* Pestañas como botones grandes, siempre visibles arriba al bajar por la página */
+.explora {{ font-weight: 800; font-size: 1.15rem; margin: 1.2rem 0 .2rem 0; color: {TINTA}; }}
+[data-testid="stTabs"] [role="tablist"] {{ gap: .5rem; flex-wrap: wrap; overflow: visible !important;
+  position: sticky; top: 3.75rem; z-index: 90; background: {PAPEL}; padding: .55rem 0 .7rem 0; border-bottom: 2px solid #CBD5DB; }}
+[data-testid="stTabs"] [role="tab"] {{ height: auto; padding: .5rem 1rem; border-radius: 999px; background: #FFFFFF;
+  border: 1.5px solid #B9C6CF; box-shadow: 0 1px 2px rgba(22, 35, 46, .08); }}
+[data-testid="stTabs"] [role="tab"] p {{ font-size: 1.05rem; font-weight: 700; color: {TINTA}; }}
+[data-testid="stTabs"] [role="tab"]:hover {{ border-color: {BRASA}; }}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {{ background: {BRASA} !important; border-color: {BRASA} !important; }}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] p {{ color: #FFFFFF !important; }}
+[data-testid="stTabs"] [data-baseweb="tab-highlight"], [data-testid="stTabs"] [data-baseweb="tab-border"] {{ display: none; }}
 .nota {{ color: {CENIZA}; font-size: .92rem; max-width: 80ch; }}
 .metodo h3 {{ margin-top: 1.6rem; }}
 .metodo p, .metodo li {{ max-width: 78ch; line-height: 1.6; }}
 :focus-visible {{ outline: 2px solid {BRASA} !important; outline-offset: 2px; }}
 @media (prefers-reduced-motion: reduce) {{ * {{ transition: none !important; animation: none !important; }} }}
 div[data-testid="stDialog"] button {{ min-height: 3.6rem; font-size: 1.2rem !important; font-weight: 700; }}
+.st-key-cerrar_video button {{ min-height: 3.4rem; border: 3px solid {BRASA} !important; background: #fff !important;
+  animation: respirar 1.8s ease-in-out infinite; }}
+.st-key-cerrar_video button p {{ font-size: 1.25rem !important; font-weight: 800; color: {BRASA} !important; }}
+@keyframes respirar {{ 0%, 100% {{ transform: scale(1); box-shadow: 0 0 0 0 rgba(228, 87, 46, .55); }}
+  50% {{ transform: scale(1.07); box-shadow: 0 0 0 12px rgba(228, 87, 46, 0); }} }}
+@media (prefers-reduced-motion: reduce) {{ .st-key-cerrar_video button {{ animation: none; }} }}
+.st-key-casos button {{ border: 1.5px solid {BRASA}55; }}
 div[data-testid="stDialog"] button p {{ font-size: 1.2rem !important; }}
 </style>""", unsafe_allow_html=True)
 if GRANDE:
@@ -230,7 +244,8 @@ html {{ font-size: 21px; }}
 .nota {{ color: {CENIZA}; font-size: 1.08rem; }}
 [data-testid="stMetricValue"] {{ font-size: 2.3rem; }}
 [data-testid="stMetricLabel"] p {{ color: {TINTA} !important; font-size: 1.05rem; }}
-.stTabs [data-baseweb="tab"] p {{ font-size: 1.15rem !important; color: {TINTA}; }}
+[data-testid="stTabs"] [role="tab"] p {{ font-size: 1.25rem !important; }}
+[data-testid="stTabs"] [role="tab"][aria-selected="false"] p {{ color: {TINTA} !important; }}
 :focus-visible {{ outline: 4px solid #0050FF !important; outline-offset: 3px; }}
 a {{ text-decoration: underline; }}
 </style>""", unsafe_allow_html=True)
@@ -344,12 +359,12 @@ function instalarLupa() {
   // Cartel fijo con las instrucciones y un botón para apagarla
   const aviso = document.createElement("div");
   aviso.id = "firent-lupa-aviso"; aviso.setAttribute("role", "status");
-  aviso.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:2147483646;display:none;max-width:360px;" +
-    "background:#0B1F33;color:#fff;font:600 15px/1.35 Archivo,system-ui,sans-serif;padding:10px 12px;border-radius:10px;" +
+  aviso.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:2147483646;display:none;max-width:420px;" +
+    "background:#0B1F33;color:#fff;font:600 18px/1.4 Archivo,system-ui,sans-serif;padding:12px 14px;border-radius:10px;" +
     "box-shadow:0 6px 20px rgba(0,0,0,.35);border:2px solid #0050FF";
   const texto = document.createElement("div");
   const boton = document.createElement("button");
-  boton.style.cssText = "margin-top:8px;font:700 15px Archivo,system-ui,sans-serif;padding:6px 12px;border-radius:7px;" +
+  boton.style.cssText = "margin-top:10px;font:700 18px Archivo,system-ui,sans-serif;padding:8px 16px;border-radius:8px;" +
     "border:0;background:#fff;color:#0B1F33;cursor:pointer";
   aviso.appendChild(texto); aviso.appendChild(boton);
   document.body.appendChild(aviso);
@@ -363,7 +378,7 @@ function instalarLupa() {
     const envoltura = document.createElement("div");
     envoltura.style.cssText = "position:relative;width:100%;height:100%";
     for (const hijo of Array.from(document.body.children)) {
-      if (hijo === lente || hijo === aviso || hijo.tagName === "SCRIPT" || hijo.tagName === "NOSCRIPT") continue;
+      if (hijo === lente || hijo.tagName === "SCRIPT" || hijo.tagName === "NOSCRIPT") continue;   // el cartel de la lupa sí se copia
       const c = hijo.cloneNode(true);
       c.querySelectorAll("iframe").forEach(function (f) { f.removeAttribute("src"); f.removeAttribute("srcdoc"); f.style.background = "#E3E8EC"; });
       c.querySelectorAll("script").forEach(function (e) { e.remove(); });
@@ -383,8 +398,10 @@ function instalarLupa() {
     const cfg = window.__firentLupaCfg || {};
     const t = cfg.txt || {};
     aviso.style.display = cfg.on ? "block" : "none";
-    texto.textContent = apagadaLocal ? t.apagada : (t.prendida || "").replace("{z}", cfg.zoom);
-    boton.textContent = apagadaLocal ? t.prender : t.apagar;
+    const nuevoTexto = apagadaLocal ? t.apagada : (t.prendida || "").replace("{z}", cfg.zoom);
+    if (texto.textContent !== nuevoTexto) { texto.textContent = nuevoTexto; sucio = true; }
+    const nuevoBoton = apagadaLocal ? t.prender : t.apagar;
+    if (boton.textContent !== nuevoBoton) { boton.textContent = nuevoBoton; sucio = true; }
     if (!cfg.on || apagadaLocal || mx < 0) { lente.style.display = "none"; return; }
     if (sucio && Date.now() - ultima > 250) foto();
     const z = cfg.zoom || 3;
@@ -599,7 +616,7 @@ if "bbox_pendiente" in st.session_state:
     la0, la1, lo0, lo1 = st.session_state.pop("bbox_pendiente")
     st.session_state.update({"lat_n": la1, "lat_s": la0, "lon_o": lo0, "lon_e": lo1, "tipo_zona_val": "area"})
     for l_ in IDIOMAS:
-        st.session_state.pop(f"tipo_zona_{l_}", None)
+        st.session_state.pop(f"tipo_zona_{l_}{st.session_state.get('gen_controles', '')}", None)
 for k_, v_ in {"lat_n": -30.5, "lat_s": -32.5, "lon_o": -65.2, "lon_e": -64.0}.items():
     st.session_state.setdefault(k_, v_)
 
@@ -610,10 +627,10 @@ OTROS = [l_ for l_ in IDIOMAS if l_ != IDIOMA]
 
 def control(func, nombre, opciones, **kw):
     for l_ in OTROS:
-        st.session_state.pop(f"{nombre}_{l_}", None)
+        st.session_state.pop(f"{nombre}_{l_}{st.session_state.get('gen_controles', '')}", None)
     previo = st.session_state.get(f"{nombre}_val", opciones[0])
     v = func(options=opciones, index=opciones.index(previo) if previo in opciones else 0,
-             key=f"{nombre}_{st.session_state.idioma}", **kw)
+             key=f"{nombre}_{st.session_state.idioma}{st.session_state.get('gen_controles', '')}", **kw)
     st.session_state[f"{nombre}_val"] = v
     return v
 
@@ -664,13 +681,60 @@ else:
 anio = control(st.sidebar.selectbox, "anio", anios[::-1], label=tr("Año a analizar", "Year to analyze", pt="Ano a analisar"))
 previos = [a for a in anios if a < anio] or anios
 for l_ in OTROS:
-    st.session_state.pop(f"ref_{l_}", None)
+    st.session_state.pop(f"ref_{l_}{st.session_state.get('gen_controles', '')}", None)
 ref_prev = st.session_state.get("ref_val", (previos[0], previos[-1]))
 if not (ref_prev[0] in previos and ref_prev[1] in previos):
     ref_prev = (previos[0], previos[-1])
 ref_desde, ref_hasta = st.sidebar.select_slider(tr("Período de referencia (lo habitual)", "Reference period (the usual)", pt="Período de referência (o habitual)"),
-                                                options=previos, value=ref_prev, key=f"ref_{st.session_state.idioma}")
+                                                options=previos, value=ref_prev,
+                                                key=f"ref_{st.session_state.idioma}{st.session_state.get('gen_controles', '')}")
 st.session_state.ref_val = (ref_desde, ref_hasta)
+# ---- Mini-mapa: dónde queda la zona elegida y dónde hubo fuego ese año
+@st.cache_data(show_spinner=False)
+def celdas_anio(a_):
+    return grilla[grilla.anio == a_].groupby(["lat_c", "lon_c", "region"], as_index=False).focos_equiv.sum()
+
+
+def mini_mapa():
+    c = celdas_anio(anio)
+    rect = None
+    if region == AREA:
+        dentro = c.lat_c.between(bbox[0], bbox[1]) & c.lon_c.between(bbox[2], bbox[3])
+        rect = bbox
+    elif region == PAIS:
+        dentro = pd.Series(True, index=c.index)
+    else:
+        dentro = c.region == region
+        rect = REGIONES.get(region)
+    fig = go.Figure()
+    fig.add_trace(go.Scattergeo(lon=c.lon_c[~dentro], lat=c.lat_c[~dentro], mode="markers", hoverinfo="skip",
+                                marker=dict(size=3, color="#7F95A5", opacity=.55)))
+    fig.add_trace(go.Scattergeo(lon=c.lon_c[dentro], lat=c.lat_c[dentro], mode="markers", hoverinfo="skip",
+                                marker=dict(size=np.clip(np.sqrt(c.focos_equiv[dentro]) / 3, 3, 9),
+                                            color=AMBAR if not st.session_state.get("acc") else "#FDE725", opacity=.9)))
+    if rect:
+        la0, la1, lo0, lo1 = rect
+        fig.add_trace(go.Scattergeo(lon=[lo0, lo1, lo1, lo0, lo0], lat=[la0, la0, la1, la1, la0], mode="lines",
+                                    hoverinfo="skip", line=dict(color="#FFFFFF", width=2.5)))
+    fig.update_geos(projection_type="mercator", lonaxis_range=[-75, -52], lataxis_range=[-56, -21], resolution=50,
+                    showcountries=True, countrycolor="#9FB2BF", showcoastlines=True, coastlinecolor="#9FB2BF",
+                    showland=True, landcolor="#24394A", showocean=True, oceancolor="#16232E", showlakes=False,
+                    showframe=False, bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(height=320 if GRANDE else 270, margin=dict(l=0, r=0, t=0, b=0), showlegend=False,
+                      paper_bgcolor="rgba(0,0,0,0)", template=None)
+    st.sidebar.plotly_chart(fig, width="stretch", config={"staticPlot": True, "displayModeBar": False,
+                                                          "topojsonURL": "app/static/topojson/"})
+    st.sidebar.caption(tr(f"Dónde queda la zona. En color, las celdas con fuego en {anio}"
+                          + (" dentro de la zona." if region != PAIS else "."),
+                          f"Where the area is. In color, cells with fire in {anio}"
+                          + (" inside the area." if region != PAIS else "."),
+                          pt=f"Onde fica a área. Em cor, as células com fogo em {anio}"
+                             + (" dentro da área." if region != PAIS else ".")))
+
+
+st.sidebar.divider()
+mini_mapa()
+
 # ---- Link para compartir: la dirección de la página guarda la vista actual
 params = {"lang": IDIOMA, "anio": str(anio), "ref": f"{ref_desde}-{ref_hasta}"}
 if region == AREA:
@@ -739,7 +803,8 @@ else:
 
 col = f"{medida}_equiv"
 ref = dr[dr.anio.between(ref_desde, ref_hasta)]
-clima = ref.groupby("mes")[col].agg(mediana="median", p10=lambda s: s.quantile(.1), p90=lambda s: s.quantile(.9))
+clima = ref.groupby("mes")[col].agg(mediana="median", p10=lambda s: s.quantile(.1), p90=lambda s: s.quantile(.9),
+                                    maximo="max")
 clima = clima.reindex(range(1, 13))
 actual = dr[dr.anio == anio].set_index("mes")[col].reindex(range(1, 13))
 con_dato = actual.dropna().index
@@ -800,7 +865,10 @@ def colores(escala, valores):
 # ================================================================ cabecera: nombre, estado y franja de fuego
 total, esperado = actual.sum(), clima.mediana.reindex(con_dato).sum()
 dif = 100 * (total - esperado) / esperado if esperado else np.nan
+# Niveles de anomalía (percentiles, sin suponer una distribución normal):
+#   anómalo = supera al 90 % de los años de referencia · récord = supera a todos los años de referencia
 meses_altos = [MESES_LARGOS[m - 1] for m in con_dato if actual[m] > clima.p90[m]]
+meses_record = [MESES_LARGOS[m - 1] for m in con_dato if actual[m] > clima.maximo[m]]
 pico = int(actual.idxmax()) if actual.notna().any() and actual.max() > 0 else None
 pico_normal = int(clima.mediana.idxmax()) if clima.mediana.notna().any() and clima.mediana.max() > 0 else None
 
@@ -814,12 +882,67 @@ with cab1:
         st.markdown(f"<p class='zona-sub'>{NOMBRE_MEDIDA[medida]} · {tr('mediana de', 'median of', pt='mediana de')} "
                     f"{ref_desde}–{ref_hasta}</p>", unsafe_allow_html=True)
 
+# ---- Casos destacados: un clic carga la zona y el año de un evento conocido
+CASOS = [
+    ("delta", "Delta del Paraná", 2020, "🔥",
+     tr("Delta del Paraná 2020", "Paraná Delta 2020", pt="Delta do Paraná 2020"),
+     tr("Quema de humedales en el Delta del Paraná durante una bajante histórica del río. El humo llegó a Rosario y a "
+        "Buenos Aires.",
+        "Wetland burning in the Paraná Delta during a historic low of the river. The smoke reached Rosario and Buenos Aires.",
+        pt="Queima de áreas úmidas no Delta do Paraná durante uma vazante histórica do rio. A fumaça chegou a Rosário e "
+           "Buenos Aires.")),
+    ("corrientes", "Corrientes e Iberá", 2022, "🔥",
+     tr("Corrientes 2022", "Corrientes 2022", pt="Corrientes 2022"),
+     tr("Incendios del verano de 2022 en Corrientes y los Esteros del Iberá, con sequía y calor extremos: uno de los "
+        "peores desastres ambientales de la provincia.",
+        "Summer 2022 fires in Corrientes and the Iberá Wetlands, with extreme drought and heat: one of the worst "
+        "environmental disasters in the province.",
+        pt="Incêndios do verão de 2022 em Corrientes e nos Esteros del Iberá, com seca e calor extremos: um dos piores "
+           "desastres ambientais da província.")),
+    ("cordoba", "Sierras de Córdoba", 2020, "🔥",
+     tr("Sierras de Córdoba 2020", "Córdoba Hills 2020", pt="Serras de Córdoba 2020"),
+     tr("Incendios en las sierras de Córdoba entre agosto y octubre de 2020, de los más graves de su historia.",
+        "Fires in the Córdoba hills between August and October 2020, among the most severe in their history.",
+        pt="Incêndios nas serras de Córdoba entre agosto e outubro de 2020, dos mais graves de sua história.")),
+    ("calmo", PAIS, 2026, "🌧️",
+     tr("Argentina 2026", "Argentina 2026", pt="Argentina 2026"),
+     tr("Un año con mucho menos fuego que lo habitual en todo el país (datos hasta octubre).",
+        "A year with much less fire than usual across the country (data up to October).",
+        pt="Um ano com muito menos fogo do que o habitual em todo o país (dados até outubro).")),
+]
+
+
+def _ir_a_caso(zona, a_):
+    "Carga la zona y el año del caso (los controles toman estos valores al volver a dibujarse)."
+    viejo = st.session_state.get("gen_controles", "")
+    for l_ in IDIOMAS:
+        for nombre in ("tipo_zona", "region", "anio", "medida", "ref"):
+            st.session_state.pop(f"{nombre}_{l_}{viejo}", None)
+    # controles nuevos (otra clave) para que la barra lateral muestre la zona y el año del caso
+    st.session_state.gen_controles = f"_{(int(viejo[1:]) if viejo else 0) + 1}"
+    st.session_state.update({"tipo_zona_val": "region", "region_val": zona, "anio_val": a_, "medida_val": "focos",
+                             "ref_val": (2003, a_ - 1)})
+
+
+with st.container(key="casos"):
+    st.markdown("**" + tr("Casos destacados: probá con un clic", "Featured cases: try one click",
+                          pt="Casos em destaque: experimente com um clique") + "**")
+    cols_c = st.columns(len(CASOS))
+    for col_, (clave, zona_c, anio_c, icono, etiqueta, _) in zip(cols_c, CASOS):
+        col_.button(f"{icono} {etiqueta}", key=f"caso_{clave}", width="stretch", on_click=_ir_a_caso,
+                    args=(zona_c, anio_c))
+for clave, zona_c, anio_c, icono, etiqueta, texto_c in CASOS:
+    if region == zona_c and anio == anio_c:
+        st.info(f"{icono} **{etiqueta}.** {texto_c}")
+
 # ---- Video de presentación: aparece después de la bienvenida y se puede cerrar con la cruz
 if VIDEO_ID and not st.session_state.get("video_cerrado") and st.session_state.get("bienvenida_hecha"):
     with st.container(border=True):
-        t1_, t2_ = st.columns([12, 1])
-        t1_.markdown("**▶ " + tr("Video de presentación", "Presentation video", pt="Vídeo de apresentação") + "**")
-        if t2_.button("✕", key="cerrar_video", help=tr("Cerrar el video", "Close the video", pt="Fechar o vídeo")):
+        t1_, t2_ = st.columns([3, 1.3], vertical_alignment="center")
+        t1_.markdown("### ▶ " + tr("Video de presentación", "Presentation video", pt="Vídeo de apresentação"))
+        if t2_.button("✕  " + tr("Cerrar y ver la página", "Close and see the page", pt="Fechar e ver a página"),
+                      key="cerrar_video", width="stretch",
+                      help=tr("Cerrar el video", "Close the video", pt="Fechar o vídeo")):
             st.session_state.video_cerrado = True
             st.rerun()
         _, vc_, _ = st.columns([1, 6, 1])
@@ -841,8 +964,11 @@ if np.isfinite(dif) and len(con_dato):
     frase_estado = (f"{tr('En', 'In', pt='Em')} {anio} {tr('hubo', 'there were', pt='houve')} <b>{miles(total)} "
                     f"{UNIDAD[medida]}</b> {periodo}: <b>{abs(dif):.0f} % {sentido}</b> "
                     f"{tr('que lo habitual', 'than usual', pt='do que o habitual')}"
-                    + (tr(f", con {len(meses_altos)} meses por encima del rango normal.",
-                          f", with {len(meses_altos)} months above the normal range.", pt=f", com {len(meses_altos)} meses acima da faixa normal.") if meses_altos else "."))
+                    + (tr(f", con {len(meses_altos)} meses anómalos",
+                          f", with {len(meses_altos)} anomalous months", pt=f", com {len(meses_altos)} meses anômalos")
+                       + (tr(f" ({len(meses_record)} de ellos récord).", f" ({len(meses_record)} of them record-breaking).",
+                             pt=f" ({len(meses_record)} deles recorde).") if meses_record else ".")
+                       if meses_altos else "."))
     st.markdown(f"<p class='estado'>{frase_estado}</p>", unsafe_allow_html=True)
 else:
     frase_estado = ""
@@ -877,8 +1003,11 @@ c2.metric(tr("Lo habitual para esos meses", "Usual for those months", pt="O habi
           help=tr("Suma de las medianas históricas de esos meses", "Sum of the historical medians of those months", pt="Soma das medianas históricas desses meses"))
 c3.metric(tr(f"Mes pico en {anio}", f"Peak month in {anio}", pt=f"Mês de pico em {anio}"), MESES[pico - 1] if pico else "—",
           f"{tr('habitualmente', 'usually', pt='normalmente')}: {MESES[pico_normal - 1]}" if pico_normal else None, delta_color="off")
-c4.metric(tr("Meses por encima de lo habitual", "Months above usual", pt="Meses acima do habitual"), f"{len(meses_altos)} {tr('de', 'of', pt='de')} {len(con_dato)}",
-          help=tr("Meses que superaron al 90 % de los años de referencia", "Months above 90% of the reference years", pt="Meses que superaram 90 % dos anos de referência"))
+c4.metric(tr("Meses anómalos", "Anomalous months", pt="Meses anômalos"), f"{len(meses_altos)} {tr('de', 'of', pt='de')} {len(con_dato)}",
+          f"★ {len(meses_record)} " + tr("récord", "record", pt="recorde") if meses_record else None, delta_color="off",
+          help=tr("Anómalo: superó al 90 % de los años de referencia. Récord: superó a todos.",
+                  "Anomalous: above 90% of the reference years. Record: above all of them.",
+                  pt="Anômalo: superou 90 % dos anos de referência. Recorde: superou todos."))
 notas = []
 if len(con_dato) < 12:
     notas.append(tr(f"{anio} tiene datos hasta {MESES_LARGOS[int(con_dato.max()) - 1]}: se compara solo con esos meses.",
@@ -902,9 +1031,16 @@ resumen_voz = (f"{nombre_zona}. " + frase_estado.replace("<b>", "").replace("</b
                            f"The most active month was {MESES_LARGOS[pico - 1]}.", pt=f"O mês com mais atividade foi {MESES_LARGOS[pico - 1]}.") if pico else ""))
 boton_voz(resumen_voz, tr("Escuchar el resumen", "Listen to the summary", pt="Ouvir o resumo"))
 
-tabs = st.tabs([tr("Comparación con lo habitual", "Compared with usual", pt="Comparação com o habitual"), tr("Calendario", "Calendar", pt="Calendário"),
-                tr("Búsqueda por fechas", "Date search", pt="Busca por datas"), tr("Mapa", "Map", pt="Mapa"), tr("Armonización", "Harmonization", pt="Harmonização"),
-                tr("Validación", "Validation", pt="Validação"), tr("Datos", "Data", pt="Dados"), tr("Cómo lo hicimos", "How we built it", pt="Como fizemos"),
+st.markdown("<p class='explora'>" + tr("Explorá los datos: elegí una sección", "Explore the data: choose a section",
+                                        pt="Explore os dados: escolha uma seção") + "</p>", unsafe_allow_html=True)
+tabs = st.tabs(["📊 " + tr("Comparación con lo habitual", "Compared with usual", pt="Comparação com o habitual"),
+                "📅 " + tr("Calendario", "Calendar", pt="Calendário"),
+                "🔎 " + tr("Búsqueda por fechas", "Date search", pt="Busca por datas"),
+                "🗺️ " + tr("Mapa", "Map", pt="Mapa"),
+                "⚖️ " + tr("Armonización", "Harmonization", pt="Harmonização"),
+                "✅ " + tr("Validación", "Validation", pt="Validação"),
+                "📂 " + tr("Datos", "Data", pt="Dados"),
+                "🧪 " + tr("Cómo lo hicimos", "How we built it", pt="Como fizemos"),
                 "💬 " + tr("Comentarios", "Comments", pt="Comentários")])
 
 
@@ -1035,24 +1171,58 @@ with tabs[0]:
     fig.add_trace(go.Scatter(x=MESES, y=clima.mediana, name=tr("Mediana histórica", "Historical median", pt="Mediana histórica"),
                              mode="lines+markers", line=dict(color=CENIZA if not ACC else "#4D4D4D", dash="dash"),
                              marker=dict(symbol="diamond", size=7)))
+    fig.add_trace(go.Scatter(x=MESES, y=clima.maximo, name=tr("Máximo histórico", "Historical maximum", pt="Máximo histórico"),
+                             mode="lines", line=dict(color=CENIZA if not ACC else "#4D4D4D", dash="dot", width=1.2)))
     alto = (actual > clima.p90).values
-    fig.add_trace(go.Bar(x=MESES, y=actual, name=str(anio), marker_color=np.where(alto, C_ALTO, C_NORMAL),
+    record = (actual > clima.maximo).values
+    C_RECORD = "#000000" if ACC else "#7A1408"
+    fig.add_trace(go.Bar(x=MESES, y=actual, name=str(anio),
+                         marker_color=np.where(record, C_RECORD, np.where(alto, C_ALTO, C_NORMAL)),
                          marker_pattern_shape=np.where(alto, "/", "") if ACC else None,
-                         text=np.where(alto, tr("▲ alto", "▲ high", pt="▲ alto"), "") if ACC else None, textposition="outside"))
+                         text=np.where(record, "★ " + tr("récord", "record", pt="recorde"),
+                                       np.where(alto, ("▲ " if ACC else "") + tr("anómalo", "anomalous", pt="anômalo"), "")),
+                         textposition="outside", textfont=dict(size=12 if not GRANDE else 15)))
     fig.update_layout(height=430, yaxis_title=f"{NOMBRE_MEDIDA[medida]} {tr('por mes', 'per month', pt='por mês')}", hovermode="x unified",
                       bargap=.25)
     grafico(fig)
-    st.markdown(f"<p class='nota'>{tr('Barras de color brasa' if not ACC else 'Barras oscuras con rayas y «▲ alto»', 'Ember bars' if not ACC else 'Dark striped bars marked «▲ high»', pt='Barras cor de brasa' if not ACC else 'Barras escuras com listras e «▲ alto»')}"
-                f"{tr(': meses por encima del rango habitual. Sirve para ver si la temporada viene más intensa o si empezó antes.', ': months above the usual range. Useful to see whether the season is more intense or started earlier.', pt=': meses acima da faixa habitual. Serve para ver se a temporada está mais intensa ou se começou antes.')}</p>",
-                unsafe_allow_html=True)
+    st.markdown("<p class='nota'>" + tr(
+        "<b>Anómalo</b>: el mes superó al 90 % de los años de referencia. <b>★ Récord</b>: superó a todos (línea punteada). "
+        "Sirve para ver si la temporada viene más intensa o si empezó antes.",
+        "<b>Anomalous</b>: the month exceeded 90% of the reference years. <b>★ Record</b>: it exceeded all of them (dotted "
+        "line). Useful to see whether the season is more intense or started earlier.",
+        pt="<b>Anômalo</b>: o mês superou 90 % dos anos de referência. <b>★ Recorde</b>: superou todos (linha pontilhada). "
+           "Serve para ver se a temporada está mais intensa ou se começou antes.") + "</p>", unsafe_allow_html=True)
+    with st.expander(tr("¿Por qué percentiles y no promedio y desvío (Z-score)?",
+                        "Why percentiles and not mean and standard deviation (Z-score)?",
+                        pt="Por que percentis e não média e desvio (Z-score)?")):
+        st.markdown(tr(
+            "El Z-score supone que los datos se reparten como una campana. El fuego no: hay muchos años tranquilos y unos "
+            "pocos explosivos. En nuestros datos, **el 82 % de las combinaciones región-mes tiene una distribución claramente "
+            "asimétrica** (asimetría mayor a 1; en una campana es 0). Con datos así, un solo año extremo infla el desvío y "
+            "hace que los eventos siguientes parezcan normales. Los **percentiles** y la **mediana** no suponen ninguna forma "
+            "de distribución y no se distorsionan con los años extremos: por eso «anómalo» y «récord» son comparaciones "
+            "directas con los años reales.",
+            "The Z-score assumes data follow a bell curve. Fire does not: there are many quiet years and a few explosive "
+            "ones. In our data, **82% of region-month combinations have a clearly skewed distribution** (skewness above 1; a "
+            "bell curve has 0). With such data, a single extreme year inflates the standard deviation and makes later "
+            "events look normal. **Percentiles** and the **median** assume no distribution shape and are not distorted by "
+            "extreme years: that is why «anomalous» and «record» are direct comparisons with the actual years.",
+            pt="O Z-score supõe que os dados se distribuem como um sino. O fogo não: há muitos anos tranquilos e poucos "
+               "explosivos. Nos nossos dados, **82 % das combinações região-mês têm uma distribuição claramente assimétrica** "
+               "(assimetria maior que 1; num sino é 0). Com dados assim, um único ano extremo infla o desvio e faz os eventos "
+               "seguintes parecerem normais. Os **percentis** e a **mediana** não supõem nenhuma forma de distribuição e não se "
+               "distorcem com os anos extremos: por isso «anômalo» e «recorde» são comparações diretas com os anos reais."))
     if pico:
         texto = tr(f"En {anio}, el mes con más actividad fue {MESES_LARGOS[pico - 1]} con {miles(actual[pico])} {UNIDAD[medida]}. ",
                    f"In {anio}, the most active month was {MESES_LARGOS[pico - 1]} with {miles(actual[pico])} {UNIDAD[medida]}. ", pt=f"Em {anio}, o mês com mais atividade foi {MESES_LARGOS[pico - 1]} com {miles(actual[pico])} {UNIDAD[medida]}. ")
         if pico_normal:
             texto += tr(f"Habitualmente el pico es en {MESES_LARGOS[pico_normal - 1]}. ",
                         f"The usual peak is in {MESES_LARGOS[pico_normal - 1]}. ", pt=f"Normalmente o pico é em {MESES_LARGOS[pico_normal - 1]}. ")
-        texto += (tr(f"Por encima del rango habitual: {lista(meses_altos)}. ", f"Above the usual range: {lista(meses_altos)}. ", pt=f"Acima da faixa habitual: {lista(meses_altos)}. ")
-                  if meses_altos else tr("Ningún mes superó el rango habitual. ", "No month exceeded the usual range. ", pt="Nenhum mês superou a faixa habitual. "))
+        texto += (tr(f"Meses anómalos: {lista(meses_altos)}. ", f"Anomalous months: {lista(meses_altos)}. ", pt=f"Meses anômalos: {lista(meses_altos)}. ")
+                  if meses_altos else tr("Ningún mes fue anómalo. ", "No month was anomalous. ", pt="Nenhum mês foi anômalo. "))
+        if meses_record:
+            texto += tr(f"Récord histórico: {lista(meses_record)}. ", f"All-time record: {lista(meses_record)}. ",
+                        pt=f"Recorde histórico: {lista(meses_record)}. ")
         bajos = [MESES_LARGOS[m - 1] for m in con_dato if actual[m] < clima.p10[m]]
         if bajos:
             texto += tr(f"Por debajo del rango habitual: {lista(bajos)}.", f"Below the usual range: {lista(bajos)}.", pt=f"Abaixo da faixa habitual: {lista(bajos)}.")
@@ -1736,7 +1906,10 @@ Para validar, armamos la serie con las tres medidas por separado. Las tres marca
 parecen mucho entre sí (correlación mínima {miles(corr_min, 2)}).
 
 ### 9. Cómo funciona la página
-- **Lo habitual** es la **mediana** histórica de cada mes, y el rango habitual va del percentil 10 al 90.
+- **Lo habitual** es la **mediana** histórica de cada mes, y el rango habitual va del percentil 10 al 90. Cada mes se
+  clasifica como habitual, **anómalo** (supera al 90 % de los años de referencia) o **récord** (supera a todos). Usamos
+  percentiles y no promedio y desvío (Z-score) porque el fuego no se reparte como una campana: el 82 % de las combinaciones
+  región-mes es claramente asimétrico, y un solo año extremo inflaría el desvío y escondería otros eventos.
 - **Área propia:** la página calcula el calendario de cualquier rectángulo con los focos individuales.
 - **Búsqueda por fechas:** compara cualquier período con el mismo período de todos los años y permite descargar los focos.
 - **Mapas** con capas de fondo (topografía con curvas de nivel, relieve submarino, satélite) y ciudades principales.
@@ -1855,7 +2028,10 @@ To validate, we built the series with the three measures separately. All three f
 closely track each other (minimum correlation {corr_min:.2f}).
 
 ### 9. How the page works
-- **Usual** is each month's historical **median**; the usual range goes from the 10th to the 90th percentile.
+- **Usual** is each month's historical **median**; the usual range goes from the 10th to the 90th percentile. Each month
+  is classified as usual, **anomalous** (above 90% of the reference years) or **record** (above all of them). We use
+  percentiles rather than mean and standard deviation (Z-score) because fire is not bell-shaped: 82% of region-month
+  combinations are clearly skewed, and a single extreme year would inflate the deviation and hide other events.
 - **Custom area:** the page builds the calendar for any rectangle from individual hotspots.
 - **Date search:** compares any period with the same period in every year and lets you download the hotspots.
 - **Maps** with background layers (topography with contour lines, seafloor relief, satellite) and main cities.
@@ -1975,7 +2151,10 @@ Para validar, montamos a série com as três medidas separadamente. As três mar
 muito parecidas entre si (correlação mínima de {miles(corr_min, 2)}).
 
 ### 9. Como a página funciona
-- **O habitual** é a **mediana** histórica de cada mês, e a faixa habitual vai do percentil 10 ao 90.
+- **O habitual** é a **mediana** histórica de cada mês, e a faixa habitual vai do percentil 10 ao 90. Cada mês é
+  classificado como habitual, **anômalo** (supera 90 % dos anos de referência) ou **recorde** (supera todos). Usamos
+  percentis e não média e desvio (Z-score) porque o fogo não se distribui como um sino: 82 % das combinações região-mês
+  são claramente assimétricas, e um único ano extremo inflaria o desvio e esconderia outros eventos.
 - **Área personalizada:** a página calcula o calendário de qualquer retângulo com os focos individuais.
 - **Busca por datas:** compara qualquer período com o mesmo período de todos os anos e permite baixar os focos.
 - **Mapas** com camadas de fundo (topografia com curvas de nível, relevo submarino, satélite) e cidades principais.

@@ -9,6 +9,8 @@ any date range, compare it with the historical median and download the hotspots 
 
 - **Live web app:** [add the Streamlit link here]
 - **Languages:** English, Spanish, Portuguese and a basic Guaraní prototype (selector at the top of the left panel).
+- **Anomaly levels without normality assumptions:** each month is flagged as *anomalous* (above 90% of reference years) or *record* (above all of them). We use percentiles instead of Z-scores because fire data are strongly skewed (82% of region-month combinations have skewness > 1), so a single extreme year would inflate the standard deviation and hide later events.
+- **Featured cases:** one-click buttons load well-known events (Paraná Delta 2020, Corrientes 2022, Córdoba Hills 2020) and a low-fire year (2026); a mini-map in the sidebar shows where the selected area is and where it burned that year.
 - **Inclusion:** on arrival the app asks for the language and offers larger text with high contrast and colorblind-safe colors
   (changeable with the 👁️ button), plus an on-screen magnifier that follows the cursor; the summary can be read aloud; a presentation video opens after the welcome and can be closed; every view can be shared with a link; and anyone can leave a
   comment or report odd data through a moderated form.

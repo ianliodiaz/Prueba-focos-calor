@@ -20,7 +20,7 @@ from folium.plugins import Draw
 from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 
-VERSION_APP = "v13.3"
+VERSION_APP = "v13.4"
 
 # ---- Videos de presentación de YouTube (por ejemplo "https://youtu.be/XXXXXXXX").
 # VIDEO_URL_ES se muestra en español, portugués y guaraní; VIDEO_URL_EN en inglés.
@@ -194,10 +194,10 @@ html, body, [class*="css"], .stMarkdown, .stText, button, input, select, textare
 [data-testid="stSidebar"] [data-baseweb="select"] *, [data-testid="stSidebar"] input {{ color: {TINTA} !important; }}
 [data-testid="stSidebar"] hr {{ border-color: #2E4252; }}
 [data-testid="stSidebar"] [data-testid="stPopover"] button, [data-testid="stSidebar"] [data-testid="stLinkButton"] a,
-[data-testid="stSidebar"] [data-testid="stButton"] button {{
+[data-testid="stSidebar"] [data-testid="stButton"] button, [data-testid="stSidebar"] [data-testid="stDownloadButton"] button {{
   background: #24394A !important; border: 1px solid #5B7385 !important; }}
 [data-testid="stSidebar"] [data-testid="stPopover"] button:hover, [data-testid="stSidebar"] [data-testid="stLinkButton"] a:hover,
-[data-testid="stSidebar"] [data-testid="stButton"] button:hover {{
+[data-testid="stSidebar"] [data-testid="stButton"] button:hover, [data-testid="stSidebar"] [data-testid="stDownloadButton"] button:hover {{
   border-color: {BRASA} !important; }}
 [data-testid="stSidebar"] [data-testid="stAlert"] * {{ color: {TINTA} !important; }}
 .block-container {{ padding-top: 3.4rem; max-width: 1320px; }}

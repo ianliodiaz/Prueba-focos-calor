@@ -20,13 +20,13 @@ from folium.plugins import Draw
 from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 
-VERSION_APP = "v13.4"
+VERSION_APP = "v13.5"
 
 # ---- Videos de presentación de YouTube (por ejemplo "https://youtu.be/XXXXXXXX").
 # VIDEO_URL_ES se muestra en español, portugués y guaraní; VIDEO_URL_EN en inglés.
 # Si VIDEO_URL_EN queda vacío, en inglés también se muestra el video en español. Si los dos están vacíos, no hay video.
-VIDEO_URL_ES = "https://www.youtube.com/watch?v=7s7YxCgTaYg"
-VIDEO_URL_EN = ""
+VIDEO_URL_ES = "https://www.youtube.com/watch?v=VIeA6TnaN20"
+VIDEO_URL_EN = "https://www.youtube.com/watch?v=l0AvnyJ72Rg"
 # ---- Comentarios: formulario de Google (link prellenado) y planilla publicada con los comentarios aprobados
 FORM_URL = ("https://docs.google.com/forms/d/e/1FAIpQLSeXcpDScTTaLzCYbw7vCMWxWpWZGVu9SXVJoxgt4RP_XLK7tw/viewform"
             "?usp=pp_url&entry.1762721848=")

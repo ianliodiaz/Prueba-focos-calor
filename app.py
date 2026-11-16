@@ -20,10 +20,13 @@ from folium.plugins import Draw
 from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 
-VERSION_APP = "v13"
+VERSION_APP = "v13.3"
 
-# ---- Video de YouTube: peguen acá el link cuando lo suban (por ejemplo "https://youtu.be/XXXXXXXX"). Vacío = no se muestra.
-VIDEO_URL = "https://www.youtube.com/watch?v=7s7YxCgTaYg"
+# ---- Videos de presentación de YouTube (por ejemplo "https://youtu.be/XXXXXXXX").
+# VIDEO_URL_ES se muestra en español, portugués y guaraní; VIDEO_URL_EN en inglés.
+# Si VIDEO_URL_EN queda vacío, en inglés también se muestra el video en español. Si los dos están vacíos, no hay video.
+VIDEO_URL_ES = "https://www.youtube.com/watch?v=7s7YxCgTaYg"
+VIDEO_URL_EN = ""
 # ---- Comentarios: formulario de Google (link prellenado) y planilla publicada con los comentarios aprobados
 FORM_URL = ("https://docs.google.com/forms/d/e/1FAIpQLSeXcpDScTTaLzCYbw7vCMWxWpWZGVu9SXVJoxgt4RP_XLK7tw/viewform"
             "?usp=pp_url&entry.1762721848=")
@@ -375,7 +378,7 @@ def _id_youtube(url):
     return m.group(1) if m else None
 
 
-VIDEO_ID = _id_youtube(VIDEO_URL)
+VIDEO_ID = _id_youtube(VIDEO_URL_EN if (IDIOMA == "EN" and VIDEO_URL_EN) else VIDEO_URL_ES)
 SUBT = {"ES": "es", "EN": "en", "PT": "pt", "GN": "gn"}
 
 
@@ -736,6 +739,10 @@ else:
     medida = control(st.sidebar.radio, "medida", ["focos", "dias", "frp"],
                      label=tr("Medir la actividad de fuego por", "Measure fire activity by", pt="Medir a atividade de fogo por"), format_func=NOMBRE_MEDIDA.get)
     st.sidebar.caption(EXPLICA_MEDIDA[medida])
+# Por defecto se abre el último año completo: el año en curso todavía no terminó y no se compara bien con los anteriores
+ANIO_COMPLETO = FECHA_FIN.year if (FECHA_FIN.month, FECHA_FIN.day) == (12, 31) else FECHA_FIN.year - 1
+if ANIO_COMPLETO in anios:
+    st.session_state.setdefault("anio_val", ANIO_COMPLETO)
 anio = control(st.sidebar.selectbox, "anio", anios[::-1], label=tr("Año a analizar", "Year to analyze", pt="Ano a analisar"))
 previos = [a for a in anios if a < anio] or anios
 for l_ in OTROS:
@@ -829,6 +836,22 @@ if VIDEO_ID:
                       on_click=_abrir_video, width="stretch", key="abrir_video")
 st.sidebar.link_button(tr("Comentar o reportar un dato raro", "Comment or report odd data", pt="Comentar ou relatar um dado estranho"),
                        FORM_URL + urllib.parse.quote(contexto_form), icon=":material/chat_bubble:", width="stretch")
+
+
+@st.cache_resource(show_spinner=False)
+def leer_guia(nombre):
+    "Guía de uso en PDF (en la carpeta static/ del repositorio). None si no está."
+    p = next(iter(sorted(RAIZ.rglob(nombre))), None)
+    return p.read_bytes() if p else None
+
+
+_nombre_guia = "user_guide_firent_EN.pdf" if EN else "guia_uso_firent_ES.pdf"
+_guia = leer_guia(_nombre_guia)
+if _guia:
+    st.sidebar.download_button(tr("Guía de uso (PDF)", "User guide (PDF)", pt="Guia de uso (PDF, em espanhol)"),
+                               _guia, _nombre_guia, "application/pdf", icon=":material/menu_book:", width="stretch",
+                               help=tr("Cómo usar la página, paso a paso, con capturas", "How to use the app, step by step, with screenshots",
+                                       pt="Como usar a página, passo a passo, com capturas de tela"))
 st.sidebar.divider()
 fs = FECHAS_SENSOR
 st.sidebar.caption(
